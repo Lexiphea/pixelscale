@@ -32,8 +32,22 @@ app.include_router(stress.router)
 
 @app.get("/")
 async def root():
+    routes = []
+    for route in app.routes:
+        if hasattr(route, "methods") and hasattr(route, "path"):
+            for method in route.methods:
+                if method != "HEAD":
+                    routes.append({
+                        "method": method,
+                        "path": route.path,
+                        "name": route.name,
+                    })
+
     return {
-        "message": "Welcome to PixelScale API",
+        "name": "PixelScale API",
+        "version": "1.0.0",
         "docs": "/docs",
-        "health": "/health",
+        "openapi": "/openapi.json",
+        "endpoints": sorted(routes, key=lambda x: (x["path"], x["method"])),
     }
+

@@ -2,13 +2,19 @@ import logging
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
 
 from .. import crud
 from ..config import get_settings
 from ..database import get_db
-from ..schemas import ImageResponse, ImageUploadResponse
+from ..schemas import (
+    FilterType,
+    ImageFormat,
+    ImageProcessingOptions,
+    ImageResponse,
+    ImageUploadResponse,
+)
 from ..services import s3
 from ..services.image_processor import process_image
 
@@ -27,8 +33,25 @@ ALLOWED_CONTENT_TYPES = {
 @router.post("/upload", response_model=ImageUploadResponse)
 async def upload_image(
     file: UploadFile = File(...),
+    width: int | None = Query(None, ge=1, le=4096),
+    height: int | None = Query(None, ge=1, le=4096),
+    preset: str | None = Query(None),
+    maintain_aspect: bool = Query(True),
+    crop_x: int | None = Query(None, ge=0),
+    crop_y: int | None = Query(None, ge=0),
+    crop_width: int | None = Query(None, ge=1),
+    crop_height: int | None = Query(None, ge=1),
+    rotate: int = Query(0, ge=0, le=360),
+    flip_horizontal: bool = Query(False),
+    flip_vertical: bool = Query(False),
+    filter: FilterType = Query(FilterType.NONE),
+    brightness: int = Query(0, ge=-100, le=100),
+    contrast: int = Query(0, ge=-100, le=100),
+    saturation: int = Query(0, ge=-100, le=100),
+    format: ImageFormat = Query(ImageFormat.JPEG),
+    quality: int = Query(85, ge=1, le=100),
     db: Session = Depends(get_db),
-) -> ImageUploadResponse:
+):
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(
             status_code=400,
@@ -56,7 +79,27 @@ async def upload_image(
 
     image = crud.create_image(db, filename=original_filename, s3_key_raw=raw_key)
 
-    result = process_image(raw_key)
+    options = ImageProcessingOptions(
+        width=width,
+        height=height,
+        preset=preset or "medium",
+        maintain_aspect=maintain_aspect,
+        crop_x=crop_x,
+        crop_y=crop_y,
+        crop_width=crop_width,
+        crop_height=crop_height,
+        rotate=rotate,
+        flip_horizontal=flip_horizontal,
+        flip_vertical=flip_vertical,
+        filter=filter,
+        brightness=brightness,
+        contrast=contrast,
+        saturation=saturation,
+        format=format,
+        quality=quality,
+    )
+
+    result = process_image(raw_key, options=options)
     if result:
         processed_key, processed_url = result
         crud.update_image_processed(db, image.id, processed_url)
@@ -69,7 +112,32 @@ async def upload_image(
         id=image.id,
         filename=original_filename,
         url=url,
+        options_applied=options,
     )
+
+
+@router.post("/process/{image_id}", response_model=ImageUploadResponse)
+async def reprocess_image(
+    image_id: int,
+    options: ImageProcessingOptions = Body(...),
+    db: Session = Depends(get_db),
+):
+    image = crud.get_image(db, image_id)
+    if not image:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    result = process_image(image.s3_key_raw, options=options)
+    if result:
+        processed_key, processed_url = result
+        crud.update_image_processed(db, image.id, processed_url)
+        return ImageUploadResponse(
+            id=image.id,
+            filename=image.filename,
+            url=processed_url,
+            options_applied=options,
+        )
+
+    raise HTTPException(status_code=500, detail="Failed to process image")
 
 
 @router.get("/images", response_model=list[ImageResponse])
@@ -79,7 +147,15 @@ async def get_images(
     db: Session = Depends(get_db),
 ) -> list[ImageResponse]:
     images = crud.get_images(db, skip=skip, limit=limit)
-    return [
-        ImageResponse.from_orm_with_url(img, img.s3_url_processed)
-        for img in images
-    ]
+    return [ImageResponse.from_orm_with_url(img, img.s3_url_processed) for img in images]
+
+
+@router.get("/images/{image_id}", response_model=ImageResponse)
+async def get_image(
+    image_id: int,
+    db: Session = Depends(get_db),
+) -> ImageResponse:
+    image = crud.get_image(db, image_id)
+    if not image:
+        raise HTTPException(status_code=404, detail="Image not found")
+    return ImageResponse.from_orm_with_url(image, image.s3_url_processed)
