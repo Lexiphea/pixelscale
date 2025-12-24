@@ -38,11 +38,14 @@ def update_image_processed(
     db: Session,
     image_id: int,
     s3_url_processed: str,
+    options: dict | None = None,
 ) -> Image | None:
     image = get_image(db, image_id)
     if image:
         image.s3_url_processed = s3_url_processed
         image.status = ImageStatus.COMPLETED
+        if options:
+            image.options = options
         db.commit()
         db.refresh(image)
     return image

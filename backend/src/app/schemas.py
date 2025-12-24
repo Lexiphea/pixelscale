@@ -59,14 +59,18 @@ class ImageResponse(BaseModel):
     id: int
     filename: str
     url: str | None = None
+    original_url: str | None = None
+    options: ImageProcessingOptions | None = None
     uploaded_at: datetime
 
     @classmethod
-    def from_orm_with_url(cls, image, url: str | None = None) -> "ImageResponse":
+    def from_orm_with_url(cls, image, url: str | None = None, original_url: str | None = None) -> "ImageResponse":
         return cls(
             id=image.id,
             filename=image.filename,
             url=url or image.s3_url_processed,
+            original_url=original_url,
+            options=ImageProcessingOptions(**image.options) if image.options else None,
             uploaded_at=image.upload_date,
         )
 

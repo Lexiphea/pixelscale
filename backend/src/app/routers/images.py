@@ -103,7 +103,7 @@ async def upload_image(
     result = process_image(raw_key, options=options)
     if result:
         processed_key, processed_url = result
-        crud.update_image_processed(db, image.id, processed_url)
+        crud.update_image_processed(db, image.id, processed_url, options.model_dump())
         url = processed_url
     else:
         crud.update_image_failed(db, image.id)
@@ -130,7 +130,7 @@ async def reprocess_image(
     result = process_image(image.s3_key_raw, options=options)
     if result:
         processed_key, processed_url = result
-        crud.update_image_processed(db, image.id, processed_url)
+        crud.update_image_processed(db, image.id, processed_url, options.model_dump())
         return ImageUploadResponse(
             id=image.id,
             filename=image.filename,
@@ -148,7 +148,14 @@ async def get_images(
     db: Session = Depends(get_db),
 ) -> list[ImageResponse]:
     images = crud.get_images(db, skip=skip, limit=limit)
-    return [ImageResponse.from_orm_with_url(img, img.s3_url_processed) for img in images]
+    return [
+        ImageResponse.from_orm_with_url(
+            img, 
+            img.s3_url_processed,
+            original_url=s3.get_public_url(settings.s3_bucket_raw, img.s3_key_raw)
+        ) 
+        for img in images
+    ]
 
 
 @router.get("/images/{image_id}", response_model=ImageResponse)
@@ -159,7 +166,12 @@ async def get_image(
     image = crud.get_image(db, image_id)
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
-    return ImageResponse.from_orm_with_url(image, image.s3_url_processed)
+    
+    return ImageResponse.from_orm_with_url(
+        image, 
+        image.s3_url_processed,
+        original_url=s3.get_public_url(settings.s3_bucket_raw, image.s3_key_raw)
+    )
 
 
 @router.delete("/images/{image_id}")

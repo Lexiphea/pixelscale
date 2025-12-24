@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Enum, String
+from sqlalchemy import DateTime, Enum, String, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .database import Base
@@ -26,6 +26,7 @@ class Image(Base):
     upload_date: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
+    options: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     def __repr__(self) -> str:
         return f"<Image(id={self.id}, filename={self.filename}, status={self.status})>"

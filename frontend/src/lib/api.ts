@@ -1,6 +1,8 @@
 export interface Image {
     id: number;
     url: string;
+    original_url?: string;
+    options?: ImageProcessingOptions;
     filename?: string;
     uploaded_at?: string;
 }
@@ -16,6 +18,7 @@ export const api = {
         return images.map(img => ({
             ...img,
             url: img.url?.startsWith('/') ? `${BASE_URL}${img.url}` : img.url,
+            original_url: img.original_url?.startsWith('/') ? `${BASE_URL}${img.original_url}` : img.original_url,
         }));
     },
 
@@ -34,6 +37,7 @@ export const api = {
         return {
             ...img,
             url: img.url?.startsWith('/') ? `${BASE_URL}${img.url}` : img.url,
+            original_url: img.original_url?.startsWith('/') ? `${BASE_URL}${img.original_url}` : img.original_url,
         };
     },
 
@@ -42,5 +46,43 @@ export const api = {
             method: 'DELETE',
         });
         if (!res.ok) throw new Error('Delete failed');
+    },
+
+    processImage: async (id: number, options: ImageProcessingOptions): Promise<Image> => {
+        const res = await fetch(`${BASE_URL}/api/process/${id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(options),
+        });
+
+        if (!res.ok) throw new Error('Processing failed');
+        const img: Image = await res.json();
+        return {
+            ...img,
+            url: img.url?.startsWith('/') ? `${BASE_URL}${img.url}` : img.url,
+            original_url: img.original_url?.startsWith('/') ? `${BASE_URL}${img.original_url}` : img.original_url,
+        };
     }
 };
+
+export interface ImageProcessingOptions {
+    width?: number;
+    height?: number;
+    preset?: string;
+    maintain_aspect?: boolean;
+    crop_x?: number;
+    crop_y?: number;
+    crop_width?: number;
+    crop_height?: number;
+    rotate?: number;
+    flip_horizontal?: boolean;
+    flip_vertical?: boolean;
+    filter?: 'none' | 'grayscale' | 'sepia' | 'blur' | 'sharpen' | 'contour' | 'emboss';
+    brightness?: number;
+    contrast?: number;
+    saturation?: number;
+    format?: 'jpeg' | 'png' | 'webp';
+    quality?: number;
+}
