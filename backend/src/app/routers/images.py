@@ -167,7 +167,17 @@ async def delete_image(
     image_id: int,
     db: Session = Depends(get_db),
 ):
-    deleted = crud.delete_image(db, image_id)
-    if not deleted:
+    image = crud.get_image(db, image_id)
+    if not image:
         raise HTTPException(status_code=404, detail="Image not found")
+
+    # Delete files from storage
+    if image.s3_key_raw:
+        s3.delete_file_from_s3(settings.s3_bucket_raw, image.s3_key_raw)
+    if image.s3_url_processed:
+        # Extract key from URL for processed images
+        processed_key = image.s3_url_processed.replace("/uploads/", "")
+        s3.delete_file_from_s3(settings.s3_bucket_processed, processed_key)
+
+    crud.delete_image(db, image_id)
     return {"message": "Image deleted", "id": image_id}

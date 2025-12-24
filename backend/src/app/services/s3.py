@@ -99,3 +99,29 @@ def _read_locally(key: str) -> bytes | None:
     except Exception as e:
         logger.error(f"Failed to read locally {key}: {e}")
         return None
+
+
+def delete_file_from_s3(bucket: str, key: str) -> bool:
+    if settings.use_local_storage:
+        return _delete_locally(key)
+
+    try:
+        s3_client = get_s3_client()
+        s3_client.delete_object(Bucket=bucket, Key=key)
+        logger.info(f"Deleted {key} from {bucket}")
+        return True
+    except ClientError as e:
+        logger.error(f"Failed to delete {key} from {bucket}: {e}")
+        return False
+
+
+def _delete_locally(key: str) -> bool:
+    try:
+        path = Path(settings.local_storage_path) / key
+        if path.exists():
+            path.unlink()
+            logger.info(f"Deleted locally: {path}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to delete locally {key}: {e}")
+        return False
