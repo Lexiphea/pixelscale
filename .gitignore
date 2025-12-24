@@ -1,2 +1,7 @@
 docs/
 backend/.venv
+backend/src/app/__pycache__
+backend/src/app/routers/__pycache__
+backend/src/app/services/__pycache__
+backend/src/app/__pycache__
+backend/src/app/uploads

@@ -1,13 +1,17 @@
 import logging
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
+from .config import get_settings
 from .database import Base, engine
 from .routers import health, images, stress
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+settings = get_settings()
 
 Base.metadata.create_all(bind=engine)
 
@@ -24,6 +28,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+if settings.use_local_storage:
+    uploads_path = Path(settings.local_storage_path)
+    uploads_path.mkdir(parents=True, exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
 
 app.include_router(health.router)
 app.include_router(images.router)

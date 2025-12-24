@@ -154,8 +154,19 @@ async def get_images(
 async def get_image(
     image_id: int,
     db: Session = Depends(get_db),
-) -> ImageResponse:
+):
     image = crud.get_image(db, image_id)
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
     return ImageResponse.from_orm_with_url(image, image.s3_url_processed)
+
+
+@router.delete("/images/{image_id}")
+async def delete_image(
+    image_id: int,
+    db: Session = Depends(get_db),
+):
+    deleted = crud.delete_image(db, image_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Image not found")
+    return {"message": "Image deleted", "id": image_id}

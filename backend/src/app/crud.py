@@ -55,3 +55,12 @@ def update_image_failed(db: Session, image_id: int) -> Image | None:
         db.commit()
         db.refresh(image)
     return image
+
+
+def delete_image(db: Session, image_id: int) -> bool:
+    image = get_image(db, image_id)
+    if image:
+        db.delete(image)
+        db.commit()
+        return True
+    return False
