@@ -4,12 +4,12 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: dark;
-  background-color: #0c0a09; /* Zinc 950 */
+  background-color: #050505;
   color: #fafafa;
 
   font-synthesis: none;
@@ -17,36 +17,38 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Purple Theme (Violet/Purple mix) */
-  --background: 270 50% 3%; /* Very dark purple/black */
-  --foreground: 270 10% 98%;
+  /* Neon Onyx Theme */
+  --background: 240 10% 2%;
+  /* Deep matte black */
+  --foreground: 0 0% 98%;
 
-  --card: 270 50% 5%;
-  --card-foreground: 270 10% 98%;
+  --card: 240 10% 4%;
+  --card-foreground: 0 0% 98%;
 
-  --popover: 270 50% 5%;
-  --popover-foreground: 270 10% 98%;
+  --popover: 240 10% 4%;
+  --popover-foreground: 0 0% 98%;
 
-  --primary: 263.4 70% 50.4%; /* Purple 600 */
-  --primary-foreground: 210 40% 98%;
+  --primary: 161 72% 43%;
+  /* Emerald 500 (#10b981) */
+  --primary-foreground: 161 72% 5%;
 
-  --secondary: 270 30% 15%;
-  --secondary-foreground: 210 40% 98%;
+  --secondary: 240 4% 10%;
+  --secondary-foreground: 0 0% 98%;
 
-  --muted: 270 30% 15%;
-  --muted-foreground: 215 20.2% 65.1%;
+  --muted: 240 4% 10%;
+  --muted-foreground: 240 5% 65%;
 
-  --accent: 270 30% 15%;
-  --accent-foreground: 210 40% 98%;
+  --accent: 161 72% 43%;
+  --accent-foreground: 0 0% 98%;
 
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 210 40% 98%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
 
-  --border: 270 30% 15%;
-  --input: 270 30% 15%;
-  --ring: 263.4 70% 50.4%;
+  --border: 240 5% 15%;
+  --input: 240 5% 15%;
+  --ring: 161 72% 43%;
 
-  --radius: 0.5rem;
+  --radius: 0.75rem;
 }
 
 /* Force Dark Mode styles directly since we are Dark Mode only */
@@ -89,6 +91,7 @@ body {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }

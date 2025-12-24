@@ -27,6 +27,7 @@ ALLOWED_CONTENT_TYPES = {
     "image/png",
     "image/gif",
     "image/webp",
+    "image/avif",
 }
 
 
