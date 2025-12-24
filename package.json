@@ -1,0 +1,16 @@
+{
+    "name": "pixelscale",
+    "version": "1.0.0",
+    "private": true,
+    "description": "PixelScale - Image upscaling application",
+    "scripts": {
+        "dev": "concurrently -c \"bgBlue,bgGreen\" -n \"backend,frontend\" \"cd backend && uv run python main.py\" \"cd frontend && npm run dev\"",
+        "backend": "cd backend && uv run python main.py",
+        "frontend": "cd frontend && npm run dev",
+        "install:frontend": "cd frontend && npm install",
+        "build:frontend": "cd frontend && npm run build"
+    },
+    "devDependencies": {
+        "concurrently": "^9.1.2"
+    }
+}

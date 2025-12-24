@@ -1,7 +1,45 @@
+# Dependencies
+node_modules/
+.venv/
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploads (local storage)
+backend/uploads/
+
+# Documentation (if auto-generated)
 docs/
-backend/.venv
-backend/src/app/__pycache__
-backend/src/app/routers/__pycache__
-backend/src/app/services/__pycache__
-backend/src/app/__pycache__
-backend/src/app/uploads
+
+# OS files
+Thumbs.db
