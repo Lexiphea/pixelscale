@@ -64,8 +64,6 @@ const SidebarContent = ({ onNavClick, collapsed = false, onCollapse }: { onNavCl
                     <NavItem to="/" icon={<LayoutDashboard className="h-4 w-4" />} label="Gallery" onClick={onNavClick} collapsed={collapsed} />
                     <NavItem to="/upload" icon={<UploadIcon className="h-4 w-4" />} label="Upload" onClick={onNavClick} collapsed={collapsed} />
 
-                    {!collapsed && <Separator className="my-2 bg-white/5" />}
-
 
                     {!collapsed && <Separator className="my-2 bg-white/5" />}
 
