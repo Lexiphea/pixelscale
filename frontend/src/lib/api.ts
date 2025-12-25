@@ -49,7 +49,6 @@ const getAuthHeaders = (): Record<string, string> => {
 
 const handleResponse = async (res: Response) => {
     if (res.status === 401) {
-        // Only clear token and redirect if user was previously authenticated
         const existingToken = localStorage.getItem('token');
         if (existingToken) {
             localStorage.removeItem('token');
@@ -68,7 +67,7 @@ const handleResponse = async (res: Response) => {
 
 export const api = {
     // Auth Endpoints
-    register: async (data: any): Promise<User> => {
+    register: async (data: { username: string; password: string }): Promise<User> => {
         const res = await fetch(`${BASE_URL}/api/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -77,7 +76,7 @@ export const api = {
         return handleResponse(res);
     },
 
-    login: async (data: any): Promise<AuthResponse> => {
+    login: async (data: { username: string; password: string }): Promise<AuthResponse> => {
         const res = await fetch(`${BASE_URL}/api/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -94,8 +93,8 @@ export const api = {
     },
 
     // Image Endpoints
-    getImages: async (): Promise<Image[]> => {
-        const res = await fetch(`${BASE_URL}/api/images`, {
+    getImages: async (skip: number = 0, limit: number = 50): Promise<Image[]> => {
+        const res = await fetch(`${BASE_URL}/api/images?skip=${skip}&limit=${limit}`, {
             headers: { ...getAuthHeaders() },
         });
         const images: Image[] = await handleResponse(res);
@@ -148,5 +147,10 @@ export const api = {
             url: img.url?.startsWith('/') ? `${BASE_URL}${img.url}` : img.url,
             original_url: img.original_url?.startsWith('/') ? `${BASE_URL}${img.original_url}` : img.original_url,
         };
+    },
+
+    getDownloadUrl: (id: number): string => {
+        const token = localStorage.getItem('token');
+        return `${BASE_URL}/api/images/${id}/download?token=${token}`;
     }
 };

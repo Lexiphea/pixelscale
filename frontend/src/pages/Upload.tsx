@@ -102,7 +102,6 @@ export default function Upload() {
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
             >
-                {/* Background Glow Effect */}
                 <div className={cn(
                     "absolute inset-0 transition-opacity duration-500 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-0",
                     isDragging && "opacity-100"

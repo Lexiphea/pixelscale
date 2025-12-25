@@ -17,7 +17,6 @@ export default function Register() {
 
         try {
             await api.register(formData);
-            // Auto-login after register
             const { access_token } = await api.login({
                 username: formData.username,
                 password: formData.password
@@ -26,8 +25,9 @@ export default function Register() {
             const user = await api.getMe();
             login(access_token, user);
             navigate('/');
-        } catch (err: any) {
-            setError(err.message || 'Registration failed');
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Registration failed';
+            setError(errorMessage);
         } finally {
             setIsLoading(false);
         }

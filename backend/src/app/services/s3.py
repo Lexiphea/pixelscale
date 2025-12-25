@@ -80,6 +80,32 @@ def generate_presigned_url(
         return None
 
 
+def generate_presigned_download_url(
+    bucket: str,
+    key: str,
+    filename: str,
+    expiration: int = 3600,
+) -> str | None:
+    if settings.use_local_storage:
+        return f"/uploads/{key}"
+
+    try:
+        s3_client = get_s3_client()
+        url = s3_client.generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": bucket,
+                "Key": key,
+                "ResponseContentDisposition": f'attachment; filename="{filename}"',
+            },
+            ExpiresIn=expiration,
+        )
+        return url
+    except ClientError as e:
+        logger.error(f"Failed to generate presigned download URL for {key}: {e}")
+        return None
+
+
 def _save_locally(content: bytes, key: str) -> bool:
     try:
         path = Path(settings.local_storage_path) / key

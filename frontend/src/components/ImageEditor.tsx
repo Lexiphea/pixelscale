@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
+import { downloadImage } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { type Image as ImageType, api } from '@/lib/api';
+import { Download, Trash2 } from 'lucide-react';
 
 interface ImageEditorProps {
     image: ImageType | null;
     isOpen: boolean;
     onClose: () => void;
+    onDelete?: (id: number) => void;
 }
 
-export default function ImageEditor({ image, isOpen, onClose }: ImageEditorProps) {
+export default function ImageEditor({ image, isOpen, onClose, onDelete }: ImageEditorProps) {
     const [brightness, setBrightness] = useState(100);
     const [contrast, setContrast] = useState(100);
     const [grayscale, setGrayscale] = useState(0);
@@ -22,15 +25,11 @@ export default function ImageEditor({ image, isOpen, onClose }: ImageEditorProps
         if (image) {
             setLastValidImage(image);
 
-            // If image has saved options, load them and use original image as base
             if (image.options) {
-                // Backend: 0 (default) -> Frontend: 100 (default)
                 setBrightness((image.options.brightness || 0) + 100);
                 setContrast((image.options.contrast || 0) + 100);
-                // Backend: Saturation 0 to -100 -> Frontend: Grayscale 0 to 100
                 setGrayscale(image.options.saturation ? -image.options.saturation : 0);
             } else {
-                // Reset filters when a new image is opened without options
                 setBrightness(100);
                 setContrast(100);
                 setGrayscale(0);
@@ -38,26 +37,10 @@ export default function ImageEditor({ image, isOpen, onClose }: ImageEditorProps
         }
     }, [image]);
 
-    // Use the current image if available, otherwise fallback to the last valid one (for closing animation)
     const displayImage = image || lastValidImage;
-
-    // If we have no image at all, don't render content (shouldn't happen in normal flow)
     if (!displayImage) return null;
 
-    // If image has options, we MUST use the original URL to apply CSS filters on top to avoid double-application
-    // Otherwise use default logic
     const hasOptions = !!displayImage.options;
-
-    // Logic:
-    // 1. If showing original -> straight original_url
-    // 2. If has saved options -> use original_url (base) + CSS filters
-    // 3. If no options -> use processed url (which is just default) + CSS filters
-
-    // To ensure consistency, if we are editing, it's safer to always base off ORIGINAL if available, 
-    // but the requirement is to use processed if no edits.
-    // Actually, "Process Image" backend updates the processed URL. 
-    // If we load that processed URL AND apply CSS, it's double.
-    // SO: If options exist, we must use original_url as the <img src> so CSS applies once.
 
     const effectiveImageSource = (showOriginal || hasOptions) && displayImage.original_url
         ? displayImage.original_url
@@ -80,10 +63,8 @@ export default function ImageEditor({ image, isOpen, onClose }: ImageEditorProps
                     </DialogTitle>
                 </DialogHeader>
 
-                {/* Main Editor Area */}
                 <div className="flex-1 flex flex-col md:flex-row gap-8 min-h-0 mt-6 overflow-hidden">
 
-                    {/* Image Preview Container */}
                     <div className="flex-[2] flex items-center justify-center bg-[#0a0a0a] rounded-3xl border border-white/5 overflow-hidden relative group shadow-inner">
                         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
                         <img
@@ -95,7 +76,6 @@ export default function ImageEditor({ image, isOpen, onClose }: ImageEditorProps
                         <div className="absolute inset-0 pointer-events-none border border-white/5 rounded-3xl" />
                     </div>
 
-                    {/* Controls Sidebar */}
                     <div className="w-full md:w-80 flex flex-col gap-8 p-6 rounded-3xl bg-white/[0.02] border border-white/5 overflow-y-auto">
                         <div className="space-y-6">
                             <div className="flex items-center justify-between min-h-[32px]">
@@ -165,7 +145,7 @@ export default function ImageEditor({ image, isOpen, onClose }: ImageEditorProps
                             </div>
                         </div>
 
-                        <div className="flex-1" /> {/* Spacer */}
+                        <div className="flex-1" />
 
                         <div className="flex flex-col gap-3">
                             <Button
@@ -173,19 +153,14 @@ export default function ImageEditor({ image, isOpen, onClose }: ImageEditorProps
                                     if (!displayImage) return;
                                     try {
                                         setIsSaving(true);
-                                        // Map frontend values to backend options
-                                        // Brightness/Contrast: 0-200 -> -100 to 100
-                                        // Grayscale: 0-100 -> Saturation 0 to -100
                                         await api.processImage(displayImage.id, {
                                             brightness: brightness - 100,
                                             contrast: contrast - 100,
                                             saturation: -grayscale,
                                         });
-                                        // Reload page to see changes (for now, or parent could allow callback)
                                         window.location.reload();
                                     } catch (error) {
                                         console.error('Failed to save:', error);
-                                        // Optional: Add toast error here
                                     } finally {
                                         setIsSaving(false);
                                     }
@@ -198,11 +173,36 @@ export default function ImageEditor({ image, isOpen, onClose }: ImageEditorProps
 
                             <Button
                                 variant="outline"
+                                onClick={() => {
+                                    if (!displayImage) return;
+                                    downloadImage(api.getDownloadUrl(displayImage.id));
+                                }}
+                                className="w-full h-12 rounded-xl border-white/10 hover:bg-white/5 uppercase tracking-widest text-[10px] font-black"
+                            >
+                                <Download className="mr-2 h-4 w-4" />
+                                Download Original
+                            </Button>
+
+                            <Button
+                                variant="outline"
                                 onClick={onClose}
                                 className="w-full h-12 rounded-xl border-white/10 hover:bg-white/5 uppercase tracking-widest text-[10px] font-black"
                             >
                                 Terminate Session
                             </Button>
+
+                            {onDelete && (
+                                <Button
+                                    variant="destructive"
+                                    onClick={() => {
+                                        if (displayImage) onDelete(displayImage.id);
+                                    }}
+                                    className="w-full h-12 rounded-xl bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20 uppercase tracking-widest text-[10px] font-black border"
+                                >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete Asset
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </div>

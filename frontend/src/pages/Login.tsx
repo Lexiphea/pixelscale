@@ -24,12 +24,11 @@ export default function Login() {
         try {
             const { access_token } = await api.login(formData);
             localStorage.setItem('token', access_token);
-            // Fetch user data immediately to populate context
             const user = await api.getMe();
             login(access_token, user);
             navigate('/');
-        } catch (err: any) {
-            const errorMessage = err.message || 'Login failed';
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Login failed';
             setError(errorMessage);
             setFormData(prev => ({ ...prev, password: '' }));
         } finally {
@@ -42,7 +41,6 @@ export default function Login() {
             className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
             onMouseMove={handleMouseMove}
         >
-            {/* Cursor spotlight */}
             <div
                 className="pointer-events-none absolute inset-0 z-0 transition-opacity duration-300"
                 style={{
