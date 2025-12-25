@@ -65,6 +65,12 @@ const handleResponse = async (res: Response) => {
     return res.json();
 };
 
+const transformImageUrls = (img: Image): Image => ({
+    ...img,
+    url: img.url?.startsWith('/') ? `${BASE_URL}${img.url}` : img.url,
+    original_url: img.original_url?.startsWith('/') ? `${BASE_URL}${img.original_url}` : img.original_url,
+});
+
 export const api = {
     // Auth Endpoints
     register: async (data: { username: string; password: string }): Promise<User> => {
@@ -98,11 +104,7 @@ export const api = {
             headers: { ...getAuthHeaders() },
         });
         const images: Image[] = await handleResponse(res);
-        return images.map(img => ({
-            ...img,
-            url: img.url?.startsWith('/') ? `${BASE_URL}${img.url}` : img.url,
-            original_url: img.original_url?.startsWith('/') ? `${BASE_URL}${img.original_url}` : img.original_url,
-        }));
+        return images.map(transformImageUrls);
     },
 
     uploadImage: async (file: File): Promise<Image> => {
@@ -116,11 +118,7 @@ export const api = {
         });
 
         const img: Image = await handleResponse(res);
-        return {
-            ...img,
-            url: img.url?.startsWith('/') ? `${BASE_URL}${img.url}` : img.url,
-            original_url: img.original_url?.startsWith('/') ? `${BASE_URL}${img.original_url}` : img.original_url,
-        };
+        return transformImageUrls(img);
     },
 
     deleteImage: async (id: number): Promise<void> => {
@@ -142,15 +140,11 @@ export const api = {
         });
 
         const img: Image = await handleResponse(res);
-        return {
-            ...img,
-            url: img.url?.startsWith('/') ? `${BASE_URL}${img.url}` : img.url,
-            original_url: img.original_url?.startsWith('/') ? `${BASE_URL}${img.original_url}` : img.original_url,
-        };
+        return transformImageUrls(img);
     },
 
-    getDownloadUrl: (id: number): string => {
+    getDownloadUrl: (id: number, version: 'original' | 'edited' = 'original'): string => {
         const token = localStorage.getItem('token');
-        return `${BASE_URL}/api/images/${id}/download?token=${token}`;
+        return `${BASE_URL}/api/images/${id}/download?token=${token}&version=${version}`;
     }
 };

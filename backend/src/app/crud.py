@@ -1,3 +1,4 @@
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from .models import Image, ImageStatus, User
@@ -37,8 +38,6 @@ def create_image(
     s3_key_raw: str,
     user_id: int,
 ) -> Image:
-    from sqlalchemy import func
-    
     max_index = db.query(func.max(Image.user_index)).filter(Image.user_id == user_id).scalar()
     next_index = (max_index or 0) + 1
     

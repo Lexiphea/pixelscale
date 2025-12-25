@@ -9,6 +9,12 @@ export default function Register() {
     const [formData, setFormData] = useState({ username: '', password: '' });
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        const { clientX, clientY } = e;
+        setMousePosition({ x: clientX, y: clientY });
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -34,8 +40,22 @@ export default function Register() {
     };
 
     return (
-        <div className="min-h-[80vh] flex items-center justify-center px-4">
-            <div className="w-full max-w-md bg-card border border-border p-8 rounded-2xl shadow-[0_0_50px_-12px_rgba(16,185,129,0.2)]">
+        <div
+            className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+            onMouseMove={handleMouseMove}
+        >
+            <div
+                className="pointer-events-none absolute inset-0 z-0 transition-opacity duration-300"
+                style={{
+                    backgroundImage: `radial-gradient(rgba(255, 255, 255, 0.2) 1px, transparent 1px)`,
+                    backgroundSize: '24px 24px',
+                    backgroundPosition: 'center',
+                    maskImage: `radial-gradient(circle 250px at ${mousePosition.x}px ${mousePosition.y}px, black, transparent)`,
+                    WebkitMaskImage: `radial-gradient(circle 250px at ${mousePosition.x}px ${mousePosition.y}px, black, transparent)`,
+                }}
+            />
+
+            <div className="w-full max-w-md bg-card border border-border p-8 rounded-xl shadow-sm relative z-10">
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
                         Create Account
@@ -57,13 +77,11 @@ export default function Register() {
                             type="text"
                             required
                             minLength={3}
-                            className="w-full bg-background/50 border border-input rounded-lg px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200"
+                            className="w-full bg-background border border-input rounded-lg px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200"
                             value={formData.username}
                             onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                         />
                     </div>
-
-
 
                     <div className="space-y-2">
                         <label htmlFor="password" className="text-sm font-medium text-muted-foreground">Password</label>
@@ -72,7 +90,7 @@ export default function Register() {
                             type="password"
                             required
                             minLength={8}
-                            className="w-full bg-background/50 border border-input rounded-lg px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200"
+                            className="w-full bg-background border border-input rounded-lg px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200"
                             value={formData.password}
                             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                         />
@@ -82,7 +100,7 @@ export default function Register() {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-3 rounded-lg transition-all duration-200 transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_-5px_rgba(16,185,129,0.4)]"
+                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-3 rounded-lg transition-all duration-200 transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isLoading ? 'Creating Account...' : 'Register'}
                     </button>

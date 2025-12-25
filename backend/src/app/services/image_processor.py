@@ -152,19 +152,20 @@ def _apply_filters(img: PILImage.Image, options: ImageProcessingOptions) -> PILI
 
 
 def _apply_sepia(img: PILImage.Image) -> PILImage.Image:
+    import numpy as np
+
     if img.mode != "RGB":
         img = img.convert("RGB")
 
-    pixels = img.load()
-    for y in range(img.height):
-        for x in range(img.width):
-            r, g, b = pixels[x, y]
-            tr = int(0.393 * r + 0.769 * g + 0.189 * b)
-            tg = int(0.349 * r + 0.686 * g + 0.168 * b)
-            tb = int(0.272 * r + 0.534 * g + 0.131 * b)
-            pixels[x, y] = (min(255, tr), min(255, tg), min(255, tb))
-
-    return img
+    arr = np.array(img, dtype=np.float32)
+    sepia_matrix = np.array([
+        [0.393, 0.769, 0.189],
+        [0.349, 0.686, 0.168],
+        [0.272, 0.534, 0.131],
+    ])
+    sepia = arr @ sepia_matrix.T
+    sepia = np.clip(sepia, 0, 255).astype(np.uint8)
+    return PILImage.fromarray(sepia)
 
 
 def _apply_adjustments(img: PILImage.Image, options: ImageProcessingOptions) -> PILImage.Image:

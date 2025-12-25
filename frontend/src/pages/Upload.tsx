@@ -71,10 +71,17 @@ export default function Upload() {
         try {
             setUploading(true);
             setError(null);
-            for (const file of files) {
-                await api.uploadImage(file);
+
+            const results = await Promise.allSettled(
+                files.map(file => api.uploadImage(file))
+            );
+
+            const failures = results.filter(r => r.status === 'rejected');
+            if (failures.length > 0) {
+                setError(`${failures.length} of ${files.length} uploads failed. Please try again.`);
+            } else {
+                navigate('/');
             }
-            navigate('/');
         } catch {
             setError('Upload failed. Please check your connection and try again.');
         } finally {

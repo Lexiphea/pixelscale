@@ -82,6 +82,7 @@ class ImageUploadResponse(BaseModel):
     user_index: int
     filename: str
     url: str | None = None
+    original_url: str | None = None
     options_applied: ImageProcessingOptions | None = None
 
 

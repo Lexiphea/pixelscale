@@ -53,8 +53,15 @@ export default function Gallery() {
         try {
             isLoadingMore.current = true;
             setIsFetchingMore(true);
-            const skip = images.length;
-            const newImages = await api.getImages(skip, 50);
+
+            // Get current length via functional update to avoid stale closure
+            let currentLength = 0;
+            setImages(prev => {
+                currentLength = prev.length;
+                return prev;
+            });
+
+            const newImages = await api.getImages(currentLength, 50);
 
             if (newImages.length < 50) {
                 setHasMore(false);
@@ -69,7 +76,7 @@ export default function Gallery() {
             isLoadingMore.current = false;
             setIsFetchingMore(false);
         }
-    }, [images.length, hasMore]);
+    }, [hasMore]);
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -232,6 +239,12 @@ export default function Gallery() {
                 isOpen={!!selectedImage}
                 onClose={() => setSelectedImage(null)}
                 onDelete={handleDelete}
+                onSave={(updatedImage) => {
+                    setImages(prev => prev.map(img =>
+                        img.id === updatedImage.id ? updatedImage : img
+                    ));
+                    setSelectedImage(updatedImage);
+                }}
             />
         </div>
     );

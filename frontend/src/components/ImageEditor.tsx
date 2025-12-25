@@ -11,9 +11,10 @@ interface ImageEditorProps {
     isOpen: boolean;
     onClose: () => void;
     onDelete?: (id: number) => void;
+    onSave?: (updatedImage: ImageType) => void;
 }
 
-export default function ImageEditor({ image, isOpen, onClose, onDelete }: ImageEditorProps) {
+export default function ImageEditor({ image, isOpen, onClose, onDelete, onSave }: ImageEditorProps) {
     const [brightness, setBrightness] = useState(100);
     const [contrast, setContrast] = useState(100);
     const [grayscale, setGrayscale] = useState(0);
@@ -70,6 +71,7 @@ export default function ImageEditor({ image, isOpen, onClose, onDelete }: ImageE
                         <img
                             src={effectiveImageSource}
                             alt="Preview"
+                            loading="lazy"
                             className="max-h-full max-w-full object-contain transition-all duration-300"
                             style={{ filter: filterString }}
                         />
@@ -153,12 +155,15 @@ export default function ImageEditor({ image, isOpen, onClose, onDelete }: ImageE
                                     if (!displayImage) return;
                                     try {
                                         setIsSaving(true);
-                                        await api.processImage(displayImage.id, {
+                                        const updatedImage = await api.processImage(displayImage.id, {
                                             brightness: brightness - 100,
                                             contrast: contrast - 100,
                                             saturation: -grayscale,
                                         });
-                                        window.location.reload();
+                                        if (onSave) {
+                                            onSave(updatedImage);
+                                        }
+                                        onClose();
                                     } catch (error) {
                                         console.error('Failed to save:', error);
                                     } finally {
@@ -171,38 +176,46 @@ export default function ImageEditor({ image, isOpen, onClose, onDelete }: ImageE
                                 {isSaving ? 'Processing...' : 'Save Changes'}
                             </Button>
 
-                            <Button
-                                variant="outline"
-                                onClick={() => {
-                                    if (!displayImage) return;
-                                    downloadImage(api.getDownloadUrl(displayImage.id));
-                                }}
-                                className="w-full h-12 rounded-xl border-white/10 hover:bg-white/5 uppercase tracking-widest text-[10px] font-black"
-                            >
-                                <Download className="mr-2 h-4 w-4" />
-                                Download Original
-                            </Button>
-
-                            <Button
-                                variant="outline"
-                                onClick={onClose}
-                                className="w-full h-12 rounded-xl border-white/10 hover:bg-white/5 uppercase tracking-widest text-[10px] font-black"
-                            >
-                                Terminate Session
-                            </Button>
-
-                            {onDelete && (
+                            <div className="flex gap-2">
                                 <Button
-                                    variant="destructive"
+                                    variant="outline"
                                     onClick={() => {
-                                        if (displayImage) onDelete(displayImage.id);
+                                        if (!displayImage) return;
+                                        downloadImage(api.getDownloadUrl(displayImage.id));
                                     }}
-                                    className="w-full h-12 rounded-xl bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20 uppercase tracking-widest text-[10px] font-black border"
+                                    className="flex-1 h-10 rounded-xl border-white/10 hover:bg-white/5 text-[9px] font-bold uppercase tracking-wider"
+                                    title="Download Original"
                                 >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete Asset
+                                    <Download className="h-3.5 w-3.5 mr-1.5" />
+                                    Original
                                 </Button>
-                            )}
+
+                                <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                        if (!displayImage) return;
+                                        downloadImage(api.getDownloadUrl(displayImage.id, 'edited'));
+                                    }}
+                                    className="flex-1 h-10 rounded-xl border-white/10 hover:bg-white/5 text-[9px] font-bold uppercase tracking-wider"
+                                    title="Download Edited"
+                                >
+                                    <Download className="h-3.5 w-3.5 mr-1.5" />
+                                    Edited
+                                </Button>
+
+                                {onDelete && (
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => {
+                                            if (displayImage) onDelete(displayImage.id);
+                                        }}
+                                        className="h-10 w-10 rounded-xl border-red-500/20 hover:bg-red-500/10 text-red-500 p-0"
+                                        title="Delete Asset"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

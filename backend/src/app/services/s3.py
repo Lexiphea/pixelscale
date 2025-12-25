@@ -1,5 +1,6 @@
 import io
 import logging
+from functools import lru_cache
 from pathlib import Path
 
 import boto3
@@ -11,6 +12,7 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
+@lru_cache(maxsize=1)
 def get_s3_client():
     return boto3.client("s3", region_name=settings.aws_region)
 

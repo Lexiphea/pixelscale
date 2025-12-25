@@ -10,32 +10,15 @@ class TestRegistration:
         assert response.status_code == 201
         data = response.json()
         assert data["username"] == test_user_data["username"]
-        assert data["email"] == test_user_data["email"]
         assert "password" not in data
         assert "hashed_password" not in data
 
     def test_register_duplicate_username(self, client, test_user_data, registered_user):
         """Test registration fails with duplicate username."""
         duplicate = test_user_data.copy()
-        duplicate["email"] = "different@example.com"
         response = client.post("/api/auth/register", json=duplicate)
         assert response.status_code == 400
         assert "Username already registered" in response.json()["detail"]
-
-    def test_register_duplicate_email(self, client, test_user_data, registered_user):
-        """Test registration fails with duplicate email."""
-        duplicate = test_user_data.copy()
-        duplicate["username"] = "differentuser"
-        response = client.post("/api/auth/register", json=duplicate)
-        assert response.status_code == 400
-        assert "Email already registered" in response.json()["detail"]
-
-    def test_register_invalid_email(self, client, test_user_data):
-        """Test registration fails with invalid email format."""
-        invalid = test_user_data.copy()
-        invalid["email"] = "not-an-email"
-        response = client.post("/api/auth/register", json=invalid)
-        assert response.status_code == 422
 
     def test_register_short_password(self, client, test_user_data):
         """Test registration fails with password less than 8 characters."""
@@ -89,7 +72,6 @@ class TestProtectedRoutes:
         assert response.status_code == 200
         data = response.json()
         assert data["username"] == test_user_data["username"]
-        assert data["email"] == test_user_data["email"]
 
     def test_get_me_unauthenticated(self, client):
         """Test /me endpoint requires authentication."""

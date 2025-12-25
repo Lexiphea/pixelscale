@@ -144,6 +144,7 @@ async def reprocess_image(
             user_index=image.user_index,
             filename=image.filename,
             url=processed_url,
+            original_url=s3.get_public_url(settings.s3_bucket_raw, image.s3_key_raw),
             options_applied=options,
         )
 
@@ -208,6 +209,7 @@ async def delete_image(
 @router.get("/images/{image_id}/download")
 async def download_image(
     image_id: int,
+    version: str = Query("original", pattern="^(original|edited)$"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_from_token),
 ):
@@ -215,17 +217,38 @@ async def download_image(
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
 
-    if settings.use_local_storage:
-        path = Path(settings.local_storage_path) / image.s3_key_raw
-        if not path.exists():
-            raise HTTPException(status_code=404, detail="File not found on server")
-        return FileResponse(path, filename=image.filename)
+    if version == "edited" and image.s3_url_processed:
+        # Download processed/edited version
+        processed_key = image.s3_url_processed.replace("/uploads/", "")
+        filename_base = Path(image.filename).stem
+        filename_ext = Path(processed_key).suffix or ".jpg"
+        download_filename = f"{filename_base}_edited{filename_ext}"
 
-    url = s3.generate_presigned_download_url(
-        settings.s3_bucket_raw,
-        image.s3_key_raw,
-        image.filename
-    )
+        if settings.use_local_storage:
+            path = Path(settings.local_storage_path) / processed_key
+            if not path.exists():
+                raise HTTPException(status_code=404, detail="Processed file not found")
+            return FileResponse(path, filename=download_filename)
+
+        url = s3.generate_presigned_download_url(
+            settings.s3_bucket_processed,
+            processed_key,
+            download_filename
+        )
+    else:
+        # Download original version
+        if settings.use_local_storage:
+            path = Path(settings.local_storage_path) / image.s3_key_raw
+            if not path.exists():
+                raise HTTPException(status_code=404, detail="File not found on server")
+            return FileResponse(path, filename=image.filename)
+
+        url = s3.generate_presigned_download_url(
+            settings.s3_bucket_raw,
+            image.s3_key_raw,
+            image.filename
+        )
+
     if not url:
         raise HTTPException(status_code=500, detail="Failed to generate download URL")
 

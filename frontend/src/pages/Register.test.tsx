@@ -25,13 +25,12 @@ describe('Register Page', () => {
         render(<Register />);
         expect(screen.getByText(/create account/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /register/i })).toBeInTheDocument();
     });
 
     it('handles successful registration', async () => {
-        const mockUser = { id: 1, username: 'newuser', email: 'new@example.com' };
+        const mockUser = { id: 1, username: 'newuser' };
         const mockAuthResponse = { access_token: 'fake-token', token_type: 'bearer' };
 
         (apiModule.api.register as any).mockResolvedValue(mockUser);
@@ -41,14 +40,12 @@ describe('Register Page', () => {
         render(<Register />);
 
         fireEvent.change(screen.getByLabelText(/username/i), { target: { value: 'newuser' } });
-        fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'new@example.com' } });
         fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'password123' } });
         fireEvent.click(screen.getByRole('button', { name: /register/i }));
 
         await waitFor(() => {
             expect(apiModule.api.register).toHaveBeenCalledWith({
                 username: 'newuser',
-                email: 'new@example.com',
                 password: 'password123'
             });
             // Should auto-login
@@ -62,7 +59,6 @@ describe('Register Page', () => {
         render(<Register />);
 
         fireEvent.change(screen.getByLabelText(/username/i), { target: { value: 'takenuser' } });
-        fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'test@example.com' } });
         fireEvent.change(screen.getByLabelText(/password/i), { target: { value: 'password123' } });
         fireEvent.click(screen.getByRole('button', { name: /register/i }));
 
