@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -19,7 +20,6 @@
 
   /* Neon Onyx Theme */
   --background: 240 10% 2%;
-  /* Deep matte black */
   --foreground: 0 0% 98%;
 
   --card: 240 10% 4%;
@@ -60,6 +60,11 @@ body {
   min-height: 100vh;
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
+
+  /* Dot pattern */
+  background-image: radial-gradient(hsl(var(--muted-foreground) / 0.15) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: center;
 }
 
 #root {
