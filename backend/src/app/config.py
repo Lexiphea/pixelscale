@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     use_local_storage: bool = False
     local_storage_path: str = "./uploads"
 
+    # JWT Authentication
+    jwt_secret_key: str = "CHANGE_ME_TO_A_SECURE_RANDOM_STRING"
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
+
 
 @lru_cache
 def get_settings() -> Settings:

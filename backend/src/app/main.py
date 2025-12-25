@@ -1,13 +1,17 @@
 import logging
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from .config import get_settings
 from .database import Base, engine
-from .routers import health, images, stress
+from .routers import auth, health, images, stress
+from .routers.auth import limiter
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,6 +24,10 @@ app = FastAPI(
     description="Image hosting and processing platform",
     version="1.0.0",
 )
+
+# Rate limiter
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,6 +43,7 @@ if settings.use_local_storage:
     app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
 
 app.include_router(health.router)
+app.include_router(auth.router)
 app.include_router(images.router)
 app.include_router(stress.router)
 
@@ -59,4 +68,3 @@ async def root():
         "openapi": "/openapi.json",
         "endpoints": sorted(routes, key=lambda x: (x["path"], x["method"])),
     }
-

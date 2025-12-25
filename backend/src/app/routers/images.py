@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from .. import crud
 from ..config import get_settings
 from ..database import get_db
+from ..models import User
 from ..schemas import (
     FilterType,
     ImageFormat,
@@ -16,6 +17,7 @@ from ..schemas import (
     ImageUploadResponse,
 )
 from ..services import s3
+from ..services.auth import get_current_user
 from ..services.image_processor import process_image
 
 logger = logging.getLogger(__name__)
@@ -52,6 +54,7 @@ async def upload_image(
     format: ImageFormat = Query(ImageFormat.JPEG),
     quality: int = Query(85, ge=1, le=100),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(
@@ -78,7 +81,9 @@ async def upload_image(
     if not success:
         raise HTTPException(status_code=500, detail="Failed to upload image to storage")
 
-    image = crud.create_image(db, filename=original_filename, s3_key_raw=raw_key)
+    image = crud.create_image(
+        db, filename=original_filename, s3_key_raw=raw_key, user_id=current_user.id
+    )
 
     options = ImageProcessingOptions(
         width=width,
@@ -122,8 +127,9 @@ async def reprocess_image(
     image_id: int,
     options: ImageProcessingOptions = Body(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    image = crud.get_image(db, image_id)
+    image = crud.get_image(db, image_id, user_id=current_user.id)
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
 
@@ -146,14 +152,15 @@ async def get_images(
     skip: int = 0,
     limit: int = 50,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> list[ImageResponse]:
-    images = crud.get_images(db, skip=skip, limit=limit)
+    images = crud.get_images(db, user_id=current_user.id, skip=skip, limit=limit)
     return [
         ImageResponse.from_orm_with_url(
-            img, 
+            img,
             img.s3_url_processed,
-            original_url=s3.get_public_url(settings.s3_bucket_raw, img.s3_key_raw)
-        ) 
+            original_url=s3.get_public_url(settings.s3_bucket_raw, img.s3_key_raw),
+        )
         for img in images
     ]
 
@@ -162,15 +169,16 @@ async def get_images(
 async def get_image(
     image_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    image = crud.get_image(db, image_id)
+    image = crud.get_image(db, image_id, user_id=current_user.id)
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
-    
+
     return ImageResponse.from_orm_with_url(
-        image, 
+        image,
         image.s3_url_processed,
-        original_url=s3.get_public_url(settings.s3_bucket_raw, image.s3_key_raw)
+        original_url=s3.get_public_url(settings.s3_bucket_raw, image.s3_key_raw),
     )
 
 
@@ -178,8 +186,9 @@ async def get_image(
 async def delete_image(
     image_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    image = crud.get_image(db, image_id)
+    image = crud.get_image(db, image_id, user_id=current_user.id)
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
 
@@ -191,5 +200,5 @@ async def delete_image(
         processed_key = image.s3_url_processed.replace("/uploads/", "")
         s3.delete_file_from_s3(settings.s3_bucket_processed, processed_key)
 
-    crud.delete_image(db, image_id)
+    crud.delete_image(db, image_id, user_id=current_user.id)
     return {"message": "Image deleted", "id": image_id}
