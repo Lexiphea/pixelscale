@@ -169,8 +169,9 @@ export default function Layout() {
                 <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto relative">
                     {/* Ambient background glow */}
                     <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
-                        <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px]" />
-                        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-[100px]" />
+                        <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-primary/10 rounded-full blur-[120px] animate-[pulse_8s_ease-in-out_infinite]" />
+                        <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-[100px] animate-[pulse_10s_ease-in-out_infinite_reverse]" />
+                        <div className="absolute top-[20%] left-[20%] w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[80px] animate-[float_15s_ease-in-out_infinite]" />
                     </div>
                     <Outlet />
                 </main>

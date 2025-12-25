@@ -1,10 +1,10 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { api, type Image } from '@/lib/api';
-import { downloadImage } from '@/lib/utils';
+import { downloadImage, cn } from '@/lib/utils';
 import ImageEditor from '@/components/ImageEditor';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Loader2, Star, LayoutGrid, Image as ImageIcon, Download, Trash2 } from 'lucide-react';
+import { Loader2, Star, LayoutGrid, Image as ImageIcon, Download, Trash2, Upload as UploadIcon } from 'lucide-react';
 
 export default function Gallery() {
     const [images, setImages] = useState<Image[]>([]);
@@ -109,46 +109,81 @@ export default function Gallery() {
 
     return (
         <div className="space-y-10 max-w-[1600px] mx-auto">
-            <div className="flex items-center justify-between border-b border-white/5 pb-8">
-                <div className="space-y-2">
-                    <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-white">
-                        Dashboard
+            {/* Dashboard Hero Section */}
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4 animate-in fade-in-50 slide-in-from-bottom-5 duration-500">
+                <div className="col-span-2 space-y-2">
+                    <h1 className="text-4xl md:text-5xl font-bold tracking-tight font-['Space_Grotesk']">
+                        <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent neon-text">
+                            Dashboard
+                        </span>
                     </h1>
-                    <p className="text-muted-foreground text-sm font-medium tracking-wide">
-                        Manage and process your visual assets
+                    <p className="text-muted-foreground text-lg">
+                        Welcome to your own <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent font-semibold animate-gradient bg-[length:200%_auto]">MindSpace</span>.
                     </p>
                 </div>
 
-                <div className="flex gap-4">
-                    <div className="hidden sm:flex items-center gap-3 px-4 py-2 rounded-xl bg-secondary/50 border border-white/5 backdrop-blur-sm">
-                        <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                            <ImageIcon className="w-4 h-4" />
-                        </div>
-                        <div>
-                            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">INDEXES</p>
-                            <p className="text-sm font-bold text-white">{images.length}</p>
-                        </div>
+                {/* Stats Cards */}
+                <div className="glass-panel p-6 rounded-2xl flex flex-col justify-between group hover:border-primary/30 transition-colors relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <ImageIcon className="w-12 h-12 text-primary" />
+                    </div>
+                    <div>
+                        <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Total Assets</p>
+                        <h3 className="text-3xl font-bold mt-2 text-white group-hover:text-primary transition-colors font-mono">
+                            {images.length}
+                        </h3>
+                    </div>
+                    <div className="w-full bg-white/5 h-1 mt-4 rounded-full overflow-hidden">
+                        <div className="h-full bg-primary/50 w-3/4" />
+                    </div>
+                </div>
+
+                <div className="glass-panel p-6 rounded-2xl flex flex-col justify-between group hover:border-yellow-500/30 transition-colors relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Star className="w-12 h-12 text-yellow-500" />
+                    </div>
+                    <div>
+                        <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Favorites</p>
+                        <h3 className="text-3xl font-bold mt-2 text-white group-hover:text-yellow-400 transition-colors font-mono">
+                            {images.filter(i => i.is_favorite).length}
+                        </h3>
+                    </div>
+                    <div className="w-full bg-white/5 h-1 mt-4 rounded-full overflow-hidden">
+                        <div className="h-full bg-yellow-500/50 w-1/2" />
                     </div>
                 </div>
             </div>
 
+            <div className="flex items-center justify-between pt-8 pb-4">
+                <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                    <LayoutGrid className="w-5 h-5 text-primary" />
+                    Recent Uploads
+                </h2>
+                <Link to="/upload">
+                    <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-all duration-300">
+                        <UploadIcon className="w-4 h-4 mr-2" />
+                        Upload New
+                    </Button>
+                </Link>
+            </div>
+
             {error && (
-                <div className="p-4 rounded-xl bg-destructive/5 text-destructive border border-destructive/10">
+                <div className="p-4 rounded-xl bg-destructive/10 text-destructive border border-destructive/20 backdrop-blur-md">
                     <p className="text-sm font-medium flex items-center gap-2">
-                        <div className="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse" />
+                        <div className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
                         {error}
                     </p>
                 </div>
             )}
 
             {loading ? (
-                <div className="flex h-[50vh] flex-col items-center justify-center gap-4">
+                <div className="flex h-[40vh] flex-col items-center justify-center gap-6">
                     <div className="relative">
-                        <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full scale-150 animate-pulse" />
-                        <Loader2 className="h-8 w-8 animate-spin text-primary relative" />
+                        <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full scale-150 animate-pulse" />
+                        <Loader2 className="h-12 w-12 animate-spin text-primary relative" />
                     </div>
-                    <p className="text-xs uppercase tracking-widest font-semibold text-muted-foreground/80 animate-pulse">
-                        Synchronizing...
+                    <p className="text-sm uppercase tracking-[0.2em] font-bold text-primary/80 animate-pulse">
+                        Synchronizing Neural Network...
                     </p>
                 </div>
             ) : images.length > 0 ? (
@@ -161,53 +196,55 @@ export default function Gallery() {
                                 onClick={() => setSelectedImage(img)}
                                 style={{ animationDelay: `${idx * 50}ms` }}
                             >
-                                <div className="relative overflow-hidden rounded-xl border border-white/5 bg-card transition-all duration-300 group-hover:border-primary/20 group-hover:shadow-[0_0_40px_-10px_rgba(16,185,129,0.1)] group-hover:-translate-y-1">
+                                <div className="relative overflow-hidden rounded-2xl border border-white/5 bg-[#0A0A0A] transition-all duration-300 group-hover:border-primary/50 group-hover:shadow-[0_0_30px_-5px_rgba(16,185,129,0.2)] group-hover:-translate-y-2">
                                     <img
                                         src={img.url}
                                         alt={`Image ${img.id}`}
-                                        className="w-full h-auto block transition-transform duration-500 group-hover:scale-105"
+                                        className="w-full h-auto block transition-transform duration-500 group-hover:scale-110"
                                         loading="lazy"
                                     />
 
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                                    {/* Overlay */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
 
-                                    <div className="absolute inset-x-0 bottom-0 p-4 translate-y-4 transition-transform duration-300 group-hover:translate-y-0 opacity-0 group-hover:opacity-100">
-                                        <div className="flex items-center justify-between">
+                                    {/* Content on Hover */}
+                                    <div className="absolute inset-x-0 bottom-0 p-5 translate-y-4 transition-transform duration-200 group-hover:translate-y-0 opacity-0 group-hover:opacity-100">
+                                        <div className="flex items-center justify-between mb-3">
                                             <div>
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-primary/80 mb-0.5">Asset_ID</p>
-                                                <p className="text-xs font-medium text-white font-mono">#{img.user_index.toString().padStart(4, '0')}</p>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <div
-                                                    className="h-8 w-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/10 hover:bg-destructive hover:border-destructive hover:text-white transition-colors"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDelete(img.id);
-                                                    }}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </div>
-                                                <div
-                                                    className="h-8 w-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/10 hover:bg-primary hover:border-primary hover:text-black transition-colors"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        downloadImage(api.getDownloadUrl(img.id));
-                                                    }}
-                                                >
-                                                    <Download className="h-4 w-4" />
-                                                </div>
-                                                <div
-                                                    className={`h-8 w-8 rounded-full backdrop-blur-md flex items-center justify-center border transition-colors ${img.is_favorite
-                                                            ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/30'
-                                                            : 'bg-white/10 border-white/10 text-white hover:bg-primary hover:border-primary'
-                                                        }`}
-                                                    onClick={(e) => handleToggleFavorite(img.id, e)}
-                                                >
-                                                    <Star className={`h-4 w-4 ${img.is_favorite ? 'fill-current' : ''}`} />
-                                                </div>
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-primary mb-1">Asset ID</p>
+                                                <p className="text-lg font-bold text-white font-mono tracking-tight">#{img.user_index.toString().padStart(4, '0')}</p>
                                             </div>
                                         </div>
+
+                                        <div className="flex gap-2">
+                                            <Button size="icon" variant="secondary" className="h-9 w-9 bg-white/10 hover:bg-primary hover:text-black border-0 backdrop-blur-md"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    downloadImage(api.getDownloadUrl(img.id));
+                                                }}
+                                            >
+                                                <Download className="h-4 w-4" />
+                                            </Button>
+                                            <Button size="icon" variant="secondary" className={cn("h-9 w-9 bg-white/10 border-0 backdrop-blur-md hover:bg-yellow-500 hover:text-black", img.is_favorite && "text-yellow-400 bg-yellow-500/20")}
+                                                onClick={(e) => handleToggleFavorite(img.id, e)}
+                                            >
+                                                <Star className={cn("h-4 w-4", img.is_favorite && "fill-current")} />
+                                            </Button>
+                                            <div className="flex-1" />
+                                            <Button size="icon" variant="destructive" className="h-9 w-9 bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white border-0 backdrop-blur-md"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDelete(img.id);
+                                                }}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
                                     </div>
+
+                                    {/* Corner Accents */}
+                                    <div className="absolute top-0 left-0 w-8 h-8 border-l-2 border-t-2 border-primary/0 group-hover:border-primary/50 transition-all duration-300 rounded-tl-lg" />
+                                    <div className="absolute bottom-0 right-0 w-8 h-8 border-r-2 border-b-2 border-primary/0 group-hover:border-primary/50 transition-all duration-300 rounded-br-lg" />
                                 </div>
                             </div>
                         ))}
@@ -228,27 +265,32 @@ export default function Gallery() {
 
                     {!hasMore && images.length > 0 && (
                         <div className="text-center py-12 pb-24">
-                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/5">
-                                <div className="h-1.5 w-1.5 rounded-full bg-primary/50" />
+                            <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-white/5 border border-white/5 backdrop-blur-sm">
+                                <div className="h-1.5 w-1.5 rounded-full bg-primary/50 animate-pulse" />
                                 <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">End of Archive</p>
                             </div>
                         </div>
                     )}
                 </>
             ) : (
-                <div className="flex flex-col h-[50vh] items-center justify-center text-center border mr-6 rounded-2xl border-dashed border-white/10 bg-white/5 mx-auto w-full">
-                    <div className="h-16 w-16 rounded-full bg-white/5 flex items-center justify-center mb-6 text-muted-foreground">
-                        <LayoutGrid className="h-8 w-8" />
+                <div className="glass-panel border-dashed border-white/10 rounded-3xl p-16 text-center max-w-2xl mx-auto mt-12 relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+
+                    <div className="relative z-10">
+                        <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center mb-8 mx-auto group-hover:scale-110 transition-transform duration-500 shadow-[0_0_40px_rgba(16,185,129,0.2)]">
+                            <UploadIcon className="h-10 w-10 text-primary" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-white mb-3">No Assets Found</h3>
+                        <p className="text-muted-foreground max-w-md mx-auto mb-10">
+                            Your digital vault is empty. Upload your first visual asset to initialize the neural processing pipeline.
+                        </p>
+                        <Link to="/upload">
+                            <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_25px_rgba(16,185,129,0.4)] hover:shadow-[0_0_40px_rgba(16,185,129,0.6)] transition-all duration-300 h-12 px-8 text-base">
+                                <UploadIcon className="w-5 h-5 mr-2" />
+                                Initialize Upload
+                            </Button>
+                        </Link>
                     </div>
-                    <h3 className="text-xl font-medium text-white">No images yet</h3>
-                    <p className="text-muted-foreground text-sm mt-2 max-w-sm mx-auto">
-                        Your gallery is empty. Upload your first visual asset to get started with the processing pipeline.
-                    </p>
-                    <Link to="/upload" className="mt-8">
-                        <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_20px_rgba(16,185,129,0.3)]">
-                            Upload Assets
-                        </Button>
-                    </Link>
                 </div>
             )}
 
