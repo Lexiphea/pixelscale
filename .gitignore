@@ -38,7 +38,6 @@ npm-debug.log*
 # Uploads (local storage)
 backend/uploads/
 
-# Documentation (if auto-generated)
 docs/
 
 # OS files
