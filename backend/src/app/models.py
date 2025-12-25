@@ -35,6 +35,7 @@ class Image(Base):
     __tablename__ = "images"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_index: Mapped[int] = mapped_column(nullable=False, default=1)
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
     s3_key_raw: Mapped[str] = mapped_column(String(255), nullable=False)
     s3_url_processed: Mapped[str | None] = mapped_column(String(512), nullable=True)

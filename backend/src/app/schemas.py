@@ -57,6 +57,7 @@ class ImageResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    user_index: int
     filename: str
     url: str | None = None
     original_url: str | None = None
@@ -67,6 +68,7 @@ class ImageResponse(BaseModel):
     def from_orm_with_url(cls, image, url: str | None = None, original_url: str | None = None) -> "ImageResponse":
         return cls(
             id=image.id,
+            user_index=image.user_index,
             filename=image.filename,
             url=url or image.s3_url_processed,
             original_url=original_url,
@@ -77,6 +79,7 @@ class ImageResponse(BaseModel):
 
 class ImageUploadResponse(BaseModel):
     id: int
+    user_index: int
     filename: str
     url: str | None = None
     options_applied: ImageProcessingOptions | None = None

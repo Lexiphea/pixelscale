@@ -1,5 +1,6 @@
 export interface Image {
     id: number;
+    user_index: number;
     url: string;
     original_url?: string;
     options?: ImageProcessingOptions;

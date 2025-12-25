@@ -116,6 +116,7 @@ async def upload_image(
 
     return ImageUploadResponse(
         id=image.id,
+        user_index=image.user_index,
         filename=original_filename,
         url=url,
         options_applied=options,
@@ -139,6 +140,7 @@ async def reprocess_image(
         crud.update_image_processed(db, image.id, processed_url, options.model_dump())
         return ImageUploadResponse(
             id=image.id,
+            user_index=image.user_index,
             filename=image.filename,
             url=processed_url,
             options_applied=options,
