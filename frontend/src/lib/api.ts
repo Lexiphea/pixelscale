@@ -6,6 +6,7 @@ export interface Image {
     options?: ImageProcessingOptions;
     filename?: string;
     uploaded_at?: string;
+    is_favorite: boolean;
 }
 
 export interface ImageProcessingOptions {
@@ -146,5 +147,22 @@ export const api = {
     getDownloadUrl: (id: number, version: 'original' | 'edited' = 'original'): string => {
         const token = localStorage.getItem('token');
         return `${BASE_URL}/api/images/${id}/download?token=${token}&version=${version}`;
+    },
+
+    toggleFavorite: async (id: number): Promise<Image> => {
+        const res = await fetch(`${BASE_URL}/api/images/${id}/favorite`, {
+            method: 'PATCH',
+            headers: { ...getAuthHeaders() },
+        });
+        const img: Image = await handleResponse(res);
+        return transformImageUrls(img);
+    },
+
+    getFavorites: async (skip: number = 0, limit: number = 50): Promise<Image[]> => {
+        const res = await fetch(`${BASE_URL}/api/images/favorites?skip=${skip}&limit=${limit}`, {
+            headers: { ...getAuthHeaders() },
+        });
+        const images: Image[] = await handleResponse(res);
+        return images.map(transformImageUrls);
     }
 };

@@ -63,6 +63,7 @@ class ImageResponse(BaseModel):
     original_url: str | None = None
     options: ImageProcessingOptions | None = None
     uploaded_at: datetime
+    is_favorite: bool = False
 
     @classmethod
     def from_orm_with_url(cls, image, url: str | None = None, original_url: str | None = None) -> "ImageResponse":
@@ -74,6 +75,7 @@ class ImageResponse(BaseModel):
             original_url=original_url,
             options=ImageProcessingOptions(**image.options) if image.options else None,
             uploaded_at=image.upload_date,
+            is_favorite=image.is_favorite,
         )
 
 

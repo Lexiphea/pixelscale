@@ -3,6 +3,7 @@ import { AuthProvider } from './lib/auth';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import Gallery from './pages/Gallery';
+import Favorites from './pages/Favorites';
 import Upload from './pages/Upload';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -27,6 +28,7 @@ function App() {
           <Route element={<Layout />}>
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<Gallery />} />
+              <Route path="/favorites" element={<Favorites />} />
               <Route path="/upload" element={<Upload />} />
             </Route>
             <Route path="/about" element={<About />} />

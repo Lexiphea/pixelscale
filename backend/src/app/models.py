@@ -46,6 +46,7 @@ class Image(Base):
         DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
     options: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    is_favorite: Mapped[bool] = mapped_column(Boolean, default=False)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     owner: Mapped["User"] = relationship("User", back_populates="images")

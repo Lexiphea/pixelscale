@@ -106,3 +106,26 @@ def delete_image(db: Session, image_id: int, user_id: int) -> bool:
         db.commit()
         return True
     return False
+
+
+def toggle_favorite(db: Session, image_id: int, user_id: int) -> Image | None:
+    image = get_image(db, image_id, user_id)
+    if image:
+        image.is_favorite = not image.is_favorite
+        db.commit()
+        db.refresh(image)
+    return image
+
+
+def get_favorite_images(db: Session, user_id: int, skip: int = 0, limit: int = 100) -> list[Image]:
+    return (
+        db.query(Image)
+        .filter(Image.user_id == user_id)
+        .filter(Image.status == ImageStatus.COMPLETED)
+        .filter(Image.is_favorite == True)
+        .order_by(Image.upload_date.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+

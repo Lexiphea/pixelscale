@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Upload as UploadIcon, Info, Menu, LogOut, User, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Upload as UploadIcon, Info, Menu, LogOut, User, ChevronLeft, ChevronRight, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -63,6 +63,7 @@ const SidebarContent = ({ onNavClick, collapsed = false, onCollapse }: { onNavCl
                     </div>
                     <NavItem to="/" icon={<LayoutDashboard className="h-4 w-4" />} label="Gallery" onClick={onNavClick} collapsed={collapsed} />
                     <NavItem to="/upload" icon={<UploadIcon className="h-4 w-4" />} label="Upload" onClick={onNavClick} collapsed={collapsed} />
+                    <NavItem to="/favorites" icon={<Star className="h-4 w-4" />} label="Favorites" onClick={onNavClick} collapsed={collapsed} />
 
 
                     {!collapsed && <Separator className="my-2 bg-white/5" />}

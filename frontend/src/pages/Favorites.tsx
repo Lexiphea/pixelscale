@@ -4,9 +4,9 @@ import { downloadImage } from '@/lib/utils';
 import ImageEditor from '@/components/ImageEditor';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Loader2, Star, LayoutGrid, Image as ImageIcon, Download, Trash2 } from 'lucide-react';
+import { Loader2, Star, Image as ImageIcon, Download, Trash2 } from 'lucide-react';
 
-export default function Gallery() {
+export default function Favorites() {
     const [images, setImages] = useState<Image[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -15,6 +15,8 @@ export default function Gallery() {
     const observerTarget = useRef<HTMLDivElement>(null);
     const isLoadingMore = useRef(false);
     const [isFetchingMore, setIsFetchingMore] = useState(false);
+    // Track images that were unfavorited during this session (greyed out)
+    const [unfavoritedIds, setUnfavoritedIds] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         loadInitial();
@@ -23,11 +25,12 @@ export default function Gallery() {
     const loadInitial = async () => {
         try {
             setLoading(true);
-            const data = await api.getImages(0, 50);
+            const data = await api.getFavorites(0, 50);
             setImages(data);
+            setUnfavoritedIds(new Set());
             if (data.length < 50) setHasMore(false);
         } catch {
-            setError('Failed to load images. Please check your connection and try again.');
+            setError('Failed to load favorites. Please check your connection and try again.');
         } finally {
             setLoading(false);
         }
@@ -51,7 +54,20 @@ export default function Gallery() {
         e.stopPropagation();
         try {
             const updatedImage = await api.toggleFavorite(id);
+            // Update the image in state
             setImages(prev => prev.map(img => img.id === id ? updatedImage : img));
+
+            if (updatedImage.is_favorite) {
+                // Re-favorited: remove from unfavorited set
+                setUnfavoritedIds(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(id);
+                    return newSet;
+                });
+            } else {
+                // Unfavorited: add to unfavorited set (grey out)
+                setUnfavoritedIds(prev => new Set(prev).add(id));
+            }
         } catch (error) {
             console.error("Failed to toggle favorite", error);
             setError("Failed to update favorite");
@@ -66,14 +82,13 @@ export default function Gallery() {
             isLoadingMore.current = true;
             setIsFetchingMore(true);
 
-            // Get current length via functional update to avoid stale closure
             let currentLength = 0;
             setImages(prev => {
                 currentLength = prev.length;
                 return prev;
             });
 
-            const newImages = await api.getImages(currentLength, 50);
+            const newImages = await api.getFavorites(currentLength, 50);
 
             if (newImages.length < 50) {
                 setHasMore(false);
@@ -83,7 +98,7 @@ export default function Gallery() {
                 setImages(prev => [...prev, ...newImages]);
             }
         } catch (error) {
-            console.error('Failed to load more images:', error);
+            console.error('Failed to load more favorites:', error);
         } finally {
             isLoadingMore.current = false;
             setIsFetchingMore(false);
@@ -112,10 +127,10 @@ export default function Gallery() {
             <div className="flex items-center justify-between border-b border-white/5 pb-8">
                 <div className="space-y-2">
                     <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-white">
-                        Dashboard
+                        Favorites
                     </h1>
                     <p className="text-muted-foreground text-sm font-medium tracking-wide">
-                        Manage and process your visual assets
+                        Your starred visual assets
                     </p>
                 </div>
 
@@ -125,8 +140,8 @@ export default function Gallery() {
                             <ImageIcon className="w-4 h-4" />
                         </div>
                         <div>
-                            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">INDEXES</p>
-                            <p className="text-sm font-bold text-white">{images.length}</p>
+                            <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">FAVORITES</p>
+                            <p className="text-sm font-bold text-white">{images.filter(img => !unfavoritedIds.has(img.id)).length}</p>
                         </div>
                     </div>
                 </div>
@@ -148,69 +163,72 @@ export default function Gallery() {
                         <Loader2 className="h-8 w-8 animate-spin text-primary relative" />
                     </div>
                     <p className="text-xs uppercase tracking-widest font-semibold text-muted-foreground/80 animate-pulse">
-                        Synchronizing...
+                        Loading Favorites...
                     </p>
                 </div>
             ) : images.length > 0 ? (
                 <>
                     <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6 pb-20">
-                        {images.map((img, idx) => (
-                            <div
-                                key={img.id}
-                                className="group relative break-inside-avoid cursor-pointer"
-                                onClick={() => setSelectedImage(img)}
-                                style={{ animationDelay: `${idx * 50}ms` }}
-                            >
-                                <div className="relative overflow-hidden rounded-xl border border-white/5 bg-card transition-all duration-300 group-hover:border-primary/20 group-hover:shadow-[0_0_40px_-10px_rgba(16,185,129,0.1)] group-hover:-translate-y-1">
-                                    <img
-                                        src={img.url}
-                                        alt={`Image ${img.id}`}
-                                        className="w-full h-auto block transition-transform duration-500 group-hover:scale-105"
-                                        loading="lazy"
-                                    />
+                        {images.map((img, idx) => {
+                            const isUnfavorited = unfavoritedIds.has(img.id);
+                            return (
+                                <div
+                                    key={img.id}
+                                    className={`group relative break-inside-avoid cursor-pointer transition-opacity duration-300 ${isUnfavorited ? 'opacity-40' : ''}`}
+                                    onClick={() => setSelectedImage(img)}
+                                    style={{ animationDelay: `${idx * 50}ms` }}
+                                >
+                                    <div className="relative overflow-hidden rounded-xl border border-white/5 bg-card transition-all duration-300 group-hover:border-primary/20 group-hover:shadow-[0_0_40px_-10px_rgba(16,185,129,0.1)] group-hover:-translate-y-1">
+                                        <img
+                                            src={img.url}
+                                            alt={`Image ${img.id}`}
+                                            className="w-full h-auto block transition-transform duration-500 group-hover:scale-105"
+                                            loading="lazy"
+                                        />
 
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
-                                    <div className="absolute inset-x-0 bottom-0 p-4 translate-y-4 transition-transform duration-300 group-hover:translate-y-0 opacity-0 group-hover:opacity-100">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-primary/80 mb-0.5">Asset_ID</p>
-                                                <p className="text-xs font-medium text-white font-mono">#{img.user_index.toString().padStart(4, '0')}</p>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <div
-                                                    className="h-8 w-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/10 hover:bg-destructive hover:border-destructive hover:text-white transition-colors"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDelete(img.id);
-                                                    }}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
+                                        <div className="absolute inset-x-0 bottom-0 p-4 translate-y-4 transition-transform duration-300 group-hover:translate-y-0 opacity-0 group-hover:opacity-100">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-[10px] uppercase tracking-wider font-bold text-primary/80 mb-0.5">Asset_ID</p>
+                                                    <p className="text-xs font-medium text-white font-mono">#{img.user_index.toString().padStart(4, '0')}</p>
                                                 </div>
-                                                <div
-                                                    className="h-8 w-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/10 hover:bg-primary hover:border-primary hover:text-black transition-colors"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        downloadImage(api.getDownloadUrl(img.id));
-                                                    }}
-                                                >
-                                                    <Download className="h-4 w-4" />
-                                                </div>
-                                                <div
-                                                    className={`h-8 w-8 rounded-full backdrop-blur-md flex items-center justify-center border transition-colors ${img.is_favorite
+                                                <div className="flex items-center gap-2">
+                                                    <div
+                                                        className="h-8 w-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/10 hover:bg-destructive hover:border-destructive hover:text-white transition-colors"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDelete(img.id);
+                                                        }}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </div>
+                                                    <div
+                                                        className="h-8 w-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white border border-white/10 hover:bg-primary hover:border-primary hover:text-black transition-colors"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            downloadImage(api.getDownloadUrl(img.id));
+                                                        }}
+                                                    >
+                                                        <Download className="h-4 w-4" />
+                                                    </div>
+                                                    <div
+                                                        className={`h-8 w-8 rounded-full backdrop-blur-md flex items-center justify-center border transition-colors ${img.is_favorite
                                                             ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/30'
                                                             : 'bg-white/10 border-white/10 text-white hover:bg-primary hover:border-primary'
-                                                        }`}
-                                                    onClick={(e) => handleToggleFavorite(img.id, e)}
-                                                >
-                                                    <Star className={`h-4 w-4 ${img.is_favorite ? 'fill-current' : ''}`} />
+                                                            }`}
+                                                        onClick={(e) => handleToggleFavorite(img.id, e)}
+                                                    >
+                                                        <Star className={`h-4 w-4 ${img.is_favorite ? 'fill-current' : ''}`} />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
 
                     {(isFetchingMore || hasMore) && (
@@ -219,7 +237,7 @@ export default function Gallery() {
                                 <div className="flex flex-col items-center gap-2">
                                     <Loader2 className="h-6 w-6 animate-spin text-primary" />
                                     <span className="text-xs uppercase tracking-widest text-primary/50 font-medium animate-pulse">
-                                        Loading Assets...
+                                        Loading Favorites...
                                     </span>
                                 </div>
                             )}
@@ -230,7 +248,7 @@ export default function Gallery() {
                         <div className="text-center py-12 pb-24">
                             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/5">
                                 <div className="h-1.5 w-1.5 rounded-full bg-primary/50" />
-                                <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">End of Archive</p>
+                                <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">End of Favorites</p>
                             </div>
                         </div>
                     )}
@@ -238,15 +256,15 @@ export default function Gallery() {
             ) : (
                 <div className="flex flex-col h-[50vh] items-center justify-center text-center border mr-6 rounded-2xl border-dashed border-white/10 bg-white/5 mx-auto w-full">
                     <div className="h-16 w-16 rounded-full bg-white/5 flex items-center justify-center mb-6 text-muted-foreground">
-                        <LayoutGrid className="h-8 w-8" />
+                        <Star className="h-8 w-8" />
                     </div>
-                    <h3 className="text-xl font-medium text-white">No images yet</h3>
+                    <h3 className="text-xl font-medium text-white">No favorites yet</h3>
                     <p className="text-muted-foreground text-sm mt-2 max-w-sm mx-auto">
-                        Your gallery is empty. Upload your first visual asset to get started with the processing pipeline.
+                        Star images from your gallery to add them to your favorites collection.
                     </p>
-                    <Link to="/upload" className="mt-8">
+                    <Link to="/" className="mt-8">
                         <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_20px_rgba(16,185,129,0.3)]">
-                            Upload Assets
+                            Browse Gallery
                         </Button>
                     </Link>
                 </div>

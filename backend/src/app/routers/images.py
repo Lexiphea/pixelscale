@@ -169,6 +169,41 @@ async def get_images(
     ]
 
 
+@router.get("/images/favorites", response_model=list[ImageResponse])
+async def get_favorite_images(
+    skip: int = 0,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[ImageResponse]:
+    images = crud.get_favorite_images(db, user_id=current_user.id, skip=skip, limit=limit)
+    return [
+        ImageResponse.from_orm_with_url(
+            img,
+            img.s3_url_processed,
+            original_url=s3.get_public_url(settings.s3_bucket_raw, img.s3_key_raw),
+        )
+        for img in images
+    ]
+
+
+@router.patch("/images/{image_id}/favorite", response_model=ImageResponse)
+async def toggle_favorite(
+    image_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    image = crud.toggle_favorite(db, image_id, user_id=current_user.id)
+    if not image:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    return ImageResponse.from_orm_with_url(
+        image,
+        image.s3_url_processed,
+        original_url=s3.get_public_url(settings.s3_bucket_raw, image.s3_key_raw),
+    )
+
+
 @router.get("/images/{image_id}", response_model=ImageResponse)
 async def get_image(
     image_id: int,
