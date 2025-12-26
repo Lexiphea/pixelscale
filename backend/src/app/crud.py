@@ -1,26 +1,36 @@
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from .logging_config import get_logger
 from .models import Image, ImageStatus, User
-from .services.auth import get_password_hash
+from .services.auth import get_password_hash, hash_username, get_username_display
+
+logger = get_logger(__name__)
 
 
 # User CRUD operations
 def create_user(db: Session, username: str, password: str, email: str | None = None) -> User:
+    """Create a new user with hashed username and password."""
     hashed_password = get_password_hash(password)
+    hashed_username = hash_username(username)
+    
     user = User(
-        username=username,
+        username=hashed_username,  # Store hashed username
         email=email,
         hashed_password=hashed_password,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
+    
+    logger.info(f"Created user: {get_username_display(username)}")
     return user
 
 
 def get_user_by_username(db: Session, username: str) -> User | None:
-    return db.query(User).filter(User.username == username).first()
+    """Find user by username (hashes input before lookup)."""
+    hashed_username = hash_username(username)
+    return db.query(User).filter(User.username == hashed_username).first()
 
 
 def get_user_by_email(db: Session, email: str) -> User | None:

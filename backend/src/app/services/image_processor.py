@@ -1,15 +1,15 @@
 import io
-import logging
 from pathlib import Path
 
 from PIL import Image as PILImage
 from PIL import ImageEnhance, ImageFilter, ImageOps
 
 from ..config import get_settings
+from ..logging_config import get_logger
 from ..schemas import FilterType, ImageFormat, ImageProcessingOptions
 from .s3 import download_file_from_s3, get_public_url, upload_file_to_s3
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 settings = get_settings()
 
 PRESET_SIZES = {

@@ -16,6 +16,7 @@ dependencies = [
     "python-multipart>=0.0.21",
     "slowapi>=0.1.9",
     "sqlalchemy>=2.0.45",
+    "watchtower>=3.0.0",
 ]
 
 [project.optional-dependencies]

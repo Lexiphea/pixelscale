@@ -1,5 +1,4 @@
 """Share link router for public image sharing."""
-import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
@@ -7,12 +6,13 @@ from sqlalchemy.orm import Session
 from .. import crud
 from ..config import get_settings
 from ..database import get_db
+from ..logging_config import get_logger
 from ..models import User
 from ..schemas import ShareDuration, ShareLinkCreate, ShareLinkResponse, SharedImageResponse, ShareLinkListItem
 from ..services.auth import get_current_user
 from ..services import s3
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 router = APIRouter(prefix="/api", tags=["Share"])
 settings = get_settings()
 
@@ -61,11 +61,28 @@ def list_share_links(
         if settings.use_local_storage:
             image_url = image.s3_url_processed or f"/uploads/{image.s3_key_raw}"
         else:
+            # For S3, extract just the key from the full URL
+            if image.s3_url_processed:
+                s3_url = image.s3_url_processed
+                logger.debug(f"[list_share_links] Processing s3_url_processed: {s3_url}")
+                if s3_url.startswith("https://"):
+                    parts = s3_url.split(".amazonaws.com/", 1)
+                    s3_key = parts[1] if len(parts) == 2 else s3_url.split("/", 3)[-1]
+                else:
+                    s3_key = s3_url
+                bucket = settings.s3_bucket_processed
+            else:
+                s3_key = image.s3_key_raw
+                bucket = settings.s3_bucket_raw
+            
+            logger.debug(f"[list_share_links] Extracted S3 key: {s3_key}, bucket: {bucket}")
+            
             image_url = s3.generate_presigned_url(
-                settings.s3_bucket_processed,
-                image.s3_url_processed or image.s3_key_raw,
+                bucket,
+                s3_key,
                 expiration=3600,
             )
+            logger.debug(f"[list_share_links] Generated presigned URL: {image_url[:100] if image_url else 'None'}...")
         
         result.append(ShareLinkListItem(
             share_id=link.id,
@@ -90,35 +107,73 @@ def get_shared_image(
     Public endpoint to access a shared image.
     No authentication required.
     """
+    logger.debug(f"[get_shared_image] Fetching share link: {share_id}")
     share_link = crud.get_share_link(db, share_id)
 
     if not share_link:
+        logger.debug(f"[get_shared_image] Share link not found: {share_id}")
         raise HTTPException(status_code=404, detail="Share link not found")
 
     if share_link.is_expired():
+        logger.debug(f"[get_shared_image] Share link expired: {share_id}")
         raise HTTPException(status_code=410, detail="Share link has expired")
 
     image = share_link.image
     if not image:
+        logger.debug(f"[get_shared_image] Image not found for share link: {share_id}")
         raise HTTPException(status_code=404, detail="Image not found")
+    
+    logger.debug(f"[get_shared_image] Found image id={image.id}, s3_key_raw={image.s3_key_raw}, s3_url_processed={image.s3_url_processed}")
 
     # Generate presigned URL for the image
     # Use processed image if available, otherwise raw
-    s3_key = image.s3_url_processed or image.s3_key_raw
     
     # For local storage, s3_url_processed already contains the local path
     if settings.use_local_storage:
+        s3_key = image.s3_url_processed or image.s3_key_raw
         image_url = s3_key if s3_key.startswith("/") else f"/uploads/{s3_key}"
     else:
-        # For S3, generate presigned URL
-        # Use a reasonable expiration (1 hour) for the presigned URL
+        # For S3, we need to extract just the key from s3_url_processed
+        # s3_url_processed contains a full S3 URL like:
+        # https://bucket.s3.region.amazonaws.com/processed/medium/xxx.jpeg
+        # We need just the key: processed/medium/xxx.jpeg
+        if image.s3_url_processed:
+            # Extract key from full S3 URL
+            s3_url = image.s3_url_processed
+            logger.debug(f"[get_shared_image] Processing s3_url_processed: {s3_url}")
+            # URL format: https://bucket.s3.region.amazonaws.com/key
+            if s3_url.startswith("https://"):
+                # Remove the domain part to get just the key
+                parts = s3_url.split(".amazonaws.com/", 1)
+                if len(parts) == 2:
+                    s3_key = parts[1]
+                else:
+                    # Fallback: try to extract path after the domain
+                    s3_key = s3_url.split("/", 3)[-1] if "/" in s3_url else s3_url
+                    logger.debug(f"[get_shared_image] Used fallback key extraction: {s3_key}")
+            else:
+                s3_key = s3_url
+            bucket = settings.s3_bucket_processed
+        else:
+            # Use raw image if no processed version
+            s3_key = image.s3_key_raw
+            bucket = settings.s3_bucket_raw
+            logger.debug(f"[get_shared_image] No processed URL, using raw key: {s3_key}")
+        
+        logger.debug(f"[get_shared_image] Generating presigned URL for bucket={bucket}, key={s3_key}")
+        
+        # Generate presigned URL with the extracted key
         image_url = s3.generate_presigned_url(
-            settings.s3_bucket_processed,
+            bucket,
             s3_key,
             expiration=3600,
         )
+        
         if not image_url:
+            logger.error(f"[get_shared_image] Failed to generate presigned URL for bucket={bucket}, key={s3_key}")
             raise HTTPException(status_code=500, detail="Failed to generate image URL")
+        
+        logger.debug(f"[get_shared_image] Generated presigned URL successfully (length={len(image_url)})")
 
     return SharedImageResponse(
         image_url=image_url,

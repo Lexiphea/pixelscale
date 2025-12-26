@@ -14,10 +14,16 @@ class ImageStatus(enum.Enum):
 
 
 class User(Base):
+    """
+    User model with encrypted username storage.
+    The username field stores a SHA256 hash for privacy.
+    Login works by hashing the input username and comparing.
+    """
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    username: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
+    # Stores hashed username (SHA256 = 64 chars)
+    username: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
     email: Mapped[str | None] = mapped_column(String(255), unique=True, index=True, nullable=True, default=None)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -28,7 +34,8 @@ class User(Base):
     images: Mapped[list["Image"]] = relationship("Image", back_populates="owner")
 
     def __repr__(self) -> str:
-        return f"<User(id={self.id}, username={self.username})>"
+        # Only show first 12 chars of hashed username for security
+        return f"<User(id={self.id}, username_hash={self.username[:12]}...)>"
 
 
 class Image(Base):

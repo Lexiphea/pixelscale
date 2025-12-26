@@ -786,6 +786,7 @@ dependencies = [
     { name = "python-multipart" },
     { name = "slowapi" },
     { name = "sqlalchemy" },
+    { name = "watchtower" },
 ]
 
 [package.optional-dependencies]
@@ -811,6 +812,7 @@ requires-dist = [
     { name = "python-multipart", specifier = ">=0.0.21" },
     { name = "slowapi", specifier = ">=0.1.9" },
     { name = "sqlalchemy", specifier = ">=2.0.45" },
+    { name = "watchtower", specifier = ">=3.0.0" },
 ]
 provides-extras = ["dev"]
 
@@ -1517,6 +1519,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/4f/55/2af26693fd15165c4ff7857e38330e1b61ab8c37d15dc79118cdba115b7a/watchfiles-1.1.1-cp314-cp314t-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8c91ed27800188c2ae96d16e3149f199d62f86c7af5f5f4d2c61a3ed8cd3666c", size = 455072 },
     { url = "https://files.pythonhosted.org/packages/66/1d/d0d200b10c9311ec25d2273f8aad8c3ef7cc7ea11808022501811208a750/watchfiles-1.1.1-cp314-cp314t-musllinux_1_1_aarch64.whl", hash = "sha256:311ff15a0bae3714ffb603e6ba6dbfba4065ab60865d15a6ec544133bdb21099", size = 629104 },
     { url = "https://files.pythonhosted.org/packages/e3/bd/fa9bb053192491b3867ba07d2343d9f2252e00811567d30ae8d0f78136fe/watchfiles-1.1.1-cp314-cp314t-musllinux_1_1_x86_64.whl", hash = "sha256:a916a2932da8f8ab582f242c065f5c81bed3462849ca79ee357dd9551b0e9b01", size = 622112 },
+]
+
+[[package]]
+name = "watchtower"
+version = "3.4.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "boto3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f6/e1/40e6940383b7202e7c12343ab58c4a0acd5552217d829a4f0ed19cd9cf0b/watchtower-3.4.0.tar.gz", hash = "sha256:7d3c116aff72a73ce8f6fc0addd1d0daa04d3f9d53d87cedca3a5a65a264bf7d", size = 27128 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/35/ac/7caa56d4cf82e66b5cdc46d7fa6edd0d4bcd407ec33e46f28a8be83cca28/watchtower-3.4.0-py3-none-any.whl", hash = "sha256:5eac65cbf2a7350bb43c3518485230a6135ed7dec7ccb88468828d68ab9fea26", size = 18022 },
 ]
 
 [[package]]

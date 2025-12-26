@@ -1,4 +1,3 @@
-import logging
 import uuid
 from pathlib import Path
 
@@ -9,6 +8,7 @@ from sqlalchemy.orm import Session
 from .. import crud
 from ..config import get_settings
 from ..database import get_db
+from ..logging_config import get_logger
 from ..models import User
 from ..schemas import (
     FilterType,
@@ -21,7 +21,7 @@ from ..services import s3
 from ..services.auth import get_current_user, get_current_user_from_token
 from ..services.image_processor import process_image
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 router = APIRouter(prefix="/api", tags=["Images"])
 settings = get_settings()
 

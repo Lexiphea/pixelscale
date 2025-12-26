@@ -1,20 +1,22 @@
-import logging
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from .config import get_settings
 from .database import Base, engine
+from .logging_config import get_logger, setup_logging
+from .middleware.logging_middleware import LoggingMiddleware
 from .routers import auth, health, images, share, stress
 from .routers.auth import limiter
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Initialize logging before anything else
+setup_logging()
+logger = get_logger(__name__)
+
 settings = get_settings()
 
 Base.metadata.create_all(bind=engine)
@@ -37,10 +39,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add logging middleware (must be after CORS)
+app.add_middleware(LoggingMiddleware)
+
+logger.info("PixelScale API starting up")
+
 if settings.use_local_storage:
     uploads_path = Path(settings.local_storage_path)
     uploads_path.mkdir(parents=True, exist_ok=True)
     app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
+    logger.info(f"Using local storage: {uploads_path}")
 
 app.include_router(health.router)
 app.include_router(auth.router)

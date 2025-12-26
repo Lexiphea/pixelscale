@@ -1,5 +1,4 @@
 import io
-import logging
 from functools import lru_cache
 from pathlib import Path
 
@@ -7,8 +6,9 @@ import boto3
 from botocore.exceptions import ClientError
 
 from ..config import get_settings
+from ..logging_config import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 settings = get_settings()
 
 

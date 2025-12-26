@@ -8,12 +8,20 @@ from sqlalchemy.orm import Session
 from .. import crud
 from ..config import get_settings
 from ..database import get_db
+from ..logging_config import get_logger
 from ..models import User
 from ..schemas import Token, UserCreate, UserLogin, UserResponse
-from ..services.auth import create_access_token, get_current_user, verify_password
+from ..services.auth import (
+    create_access_token,
+    get_current_user,
+    get_username_display,
+    hash_username,
+    verify_password,
+)
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 settings = get_settings()
+logger = get_logger(__name__)
 
 limiter = Limiter(key_func=get_remote_address)
 
@@ -26,8 +34,11 @@ async def register(
     db: Session = Depends(get_db),
 ):
     """Register a new user. Rate limited to 5 requests per minute per IP."""
+    user_display = get_username_display(user_data.username)
+    
     # Check if username already exists
     if crud.get_user_by_username(db, user_data.username):
+        logger.warning(f"Registration failed: username already exists | User: {user_display}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username already registered",
@@ -38,6 +49,7 @@ async def register(
         username=user_data.username,
         password=user_data.password,
     )
+    logger.info(f"User registered successfully | User: {user_display}")
     return user
 
 
@@ -47,8 +59,11 @@ async def login(
     db: Session = Depends(get_db),
 ):
     """Authenticate user and return JWT token."""
+    user_display = get_username_display(user_data.username)
+    
     user = crud.get_user_by_username(db, user_data.username)
     if not user or not verify_password(user_data.password, user.hashed_password):
+        logger.warning(f"Login failed: invalid credentials | User: {user_display}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -56,16 +71,20 @@ async def login(
         )
 
     if not user.is_active:
+        logger.warning(f"Login failed: inactive user | User: {user_display}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Inactive user",
         )
 
     access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
+    # Use hashed username in JWT (matches what's stored in DB)
     access_token = create_access_token(
-        data={"sub": user.username},
+        data={"sub": user.username},  # user.username is already hashed
         expires_delta=access_token_expires,
     )
+    
+    logger.info(f"User logged in successfully | User: {user_display}")
     return Token(access_token=access_token)
 
 
@@ -74,4 +93,5 @@ async def get_current_user_info(
     current_user: User = Depends(get_current_user),
 ):
     """Get current authenticated user's information."""
+    logger.info(f"User info requested | User: {current_user.username[:12]}")
     return current_user

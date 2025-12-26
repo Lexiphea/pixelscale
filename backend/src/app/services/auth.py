@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import hashlib
 
 import bcrypt
 from fastapi import Depends, HTTPException, status, Query
@@ -8,9 +9,11 @@ from sqlalchemy.orm import Session
 
 from ..config import get_settings
 from ..database import get_db
+from ..logging_config import get_logger
 from ..models import User
 
 settings = get_settings()
+logger = get_logger(__name__)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
@@ -28,6 +31,25 @@ def get_password_hash(password: str) -> str:
     salt = bcrypt.gensalt()
     hashed = bcrypt.hashpw(password_bytes, salt)
     return hashed.decode("utf-8")
+
+
+def hash_username(username: str) -> str:
+    """
+    Create a deterministic hash of username for database lookup.
+    Uses SHA256 which is deterministic (same input = same output).
+    This allows us to query the database without storing plaintext usernames.
+    """
+    # Add a pepper for additional security (from settings)
+    peppered = f"{settings.jwt_secret_key}:{username.lower()}"
+    return hashlib.sha256(peppered.encode("utf-8")).hexdigest()
+
+
+def get_username_display(username: str) -> str:
+    """
+    Get a shortened hash for logging purposes.
+    Returns first 12 chars of hash for log readability.
+    """
+    return hash_username(username)[:12]
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:

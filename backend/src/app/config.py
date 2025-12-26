@@ -24,6 +24,14 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
+    # Logging Configuration
+    log_level: str = "INFO"
+    use_cloudwatch: bool = False
+    cloudwatch_log_group: str = "pixelscale"
+    cloudwatch_log_stream: str = "backend"
+    aws_access_key_id: str | None = None
+    aws_secret_access_key: str | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:
