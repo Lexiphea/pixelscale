@@ -7,6 +7,8 @@ import Favorites from './pages/Favorites';
 import Upload from './pages/Upload';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import SharedImage from './pages/SharedImage';
+import Shared from './pages/Shared';
 
 const About = () => (
   <div className="space-y-4 max-w-2xl">
@@ -24,12 +26,14 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/s/:shareId" element={<SharedImage />} />
 
           <Route element={<Layout />}>
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<Gallery />} />
               <Route path="/favorites" element={<Favorites />} />
               <Route path="/upload" element={<Upload />} />
+              <Route path="/shared" element={<Shared />} />
             </Route>
             <Route path="/about" element={<About />} />
             <Route path="*" element={<Navigate to="/" replace />} />

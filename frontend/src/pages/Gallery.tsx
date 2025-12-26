@@ -2,9 +2,10 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { api, type Image } from '@/lib/api';
 import { downloadImage, cn } from '@/lib/utils';
 import ImageEditor from '@/components/ImageEditor';
+import ShareModal from '@/components/ShareModal';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Loader2, Star, LayoutGrid, Image as ImageIcon, Download, Trash2, Upload as UploadIcon } from 'lucide-react';
+import { Loader2, Star, LayoutGrid, Image as ImageIcon, Download, Trash2, Upload as UploadIcon, Share2 } from 'lucide-react';
 
 export default function Gallery() {
     const [images, setImages] = useState<Image[]>([]);
@@ -15,6 +16,7 @@ export default function Gallery() {
     const observerTarget = useRef<HTMLDivElement>(null);
     const isLoadingMore = useRef(false);
     const [isFetchingMore, setIsFetchingMore] = useState(false);
+    const [shareImage, setShareImage] = useState<Image | null>(null);
 
     useEffect(() => {
         loadInitial();
@@ -230,6 +232,14 @@ export default function Gallery() {
                                             >
                                                 <Star className={cn("h-4 w-4", img.is_favorite && "fill-current")} />
                                             </Button>
+                                            <Button size="icon" variant="secondary" className="h-9 w-9 bg-white/10 hover:bg-cyan-500 hover:text-black border-0 backdrop-blur-md"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setShareImage(img);
+                                                }}
+                                            >
+                                                <Share2 className="h-4 w-4" />
+                                            </Button>
                                             <div className="flex-1" />
                                             <Button size="icon" variant="destructive" className="h-9 w-9 bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white border-0 backdrop-blur-md"
                                                 onClick={(e) => {
@@ -305,6 +315,12 @@ export default function Gallery() {
                     ));
                     setSelectedImage(updatedImage);
                 }}
+            />
+
+            <ShareModal
+                image={shareImage}
+                isOpen={!!shareImage}
+                onClose={() => setShareImage(null)}
             />
         </div>
     );

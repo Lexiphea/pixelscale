@@ -164,5 +164,82 @@ export const api = {
         });
         const images: Image[] = await handleResponse(res);
         return images.map(transformImageUrls);
-    }
+    },
+
+    // Share Link Endpoints
+    createShareLink: async (imageId: number, duration: ShareDuration): Promise<ShareLinkResponse> => {
+        const res = await fetch(`${BASE_URL}/api/share`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders(),
+            },
+            body: JSON.stringify({ image_id: imageId, duration }),
+        });
+        return handleResponse(res);
+    },
+
+    getSharedImage: async (shareId: string): Promise<SharedImageResponse> => {
+        // Public endpoint - no auth required
+        const res = await fetch(`${BASE_URL}/api/s/${shareId}`);
+        if (res.status === 410) {
+            throw new Error('This share link has expired');
+        }
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.detail || 'Share link not found');
+        }
+        const data = await res.json();
+        // Transform local URLs
+        if (data.image_url?.startsWith('/')) {
+            data.image_url = `${BASE_URL}${data.image_url}`;
+        }
+        return data;
+    },
+
+    deleteShareLink: async (shareId: string): Promise<void> => {
+        const res = await fetch(`${BASE_URL}/api/share/${shareId}`, {
+            method: 'DELETE',
+            headers: { ...getAuthHeaders() },
+        });
+        await handleResponse(res);
+    },
+
+    getShareLinks: async (): Promise<ShareLinkListItem[]> => {
+        const res = await fetch(`${BASE_URL}/api/share/list`, {
+            headers: { ...getAuthHeaders() },
+        });
+        const links: ShareLinkListItem[] = await handleResponse(res);
+        // Transform local URLs
+        return links.map(link => ({
+            ...link,
+            image_url: link.image_url?.startsWith('/') ? `${BASE_URL}${link.image_url}` : link.image_url,
+        }));
+    },
 };
+
+// Share Link Types
+export type ShareDuration = '1_day' | '1_week' | 'forever';
+
+export interface ShareLinkResponse {
+    share_id: string;
+    share_url: string;
+    expires_at: string | null;
+}
+
+export interface SharedImageResponse {
+    image_url: string;
+    filename: string;
+    expires_at: string | null;
+}
+
+export interface ShareLinkListItem {
+    share_id: string;
+    image_id: number;
+    image_filename: string;
+    image_url: string | null;
+    share_url: string;
+    expires_at: string | null;
+    created_at: string;
+    is_expired: boolean;
+}

@@ -129,3 +129,69 @@ def get_favorite_images(db: Session, user_id: int, skip: int = 0, limit: int = 1
         .all()
     )
 
+
+# Share Link CRUD operations
+def create_share_link(
+    db: Session,
+    image_id: int,
+    duration: str,
+) -> "ShareLink":
+    from datetime import datetime, timedelta, timezone
+    from uuid import uuid4
+    from .models import ShareLink  # Import here to avoid circular import
+
+    # Calculate expiration based on duration
+    expires_at = None
+    if duration == "1_day":
+        expires_at = datetime.now(timezone.utc) + timedelta(days=1)
+    elif duration == "1_week":
+        expires_at = datetime.now(timezone.utc) + timedelta(weeks=1)
+    # "forever" -> expires_at remains None
+
+    share_link = ShareLink(
+        id=str(uuid4()),
+        image_id=image_id,
+        expires_at=expires_at,
+    )
+    db.add(share_link)
+    db.commit()
+    db.refresh(share_link)
+    return share_link
+
+
+def get_share_link(db: Session, share_id: str) -> "ShareLink | None":
+    from .models import ShareLink
+    return db.query(ShareLink).filter(ShareLink.id == share_id).first()
+
+
+def get_share_link_by_user(db: Session, share_id: str, user_id: int) -> "ShareLink | None":
+    """Get share link only if owned by the specified user."""
+    from .models import ShareLink
+    return (
+        db.query(ShareLink)
+        .join(Image)
+        .filter(ShareLink.id == share_id)
+        .filter(Image.user_id == user_id)
+        .first()
+    )
+
+
+def get_share_links_by_user(db: Session, user_id: int) -> list:
+    """Get all share links for a user's images."""
+    from .models import ShareLink
+    return (
+        db.query(ShareLink)
+        .join(Image)
+        .filter(Image.user_id == user_id)
+        .order_by(ShareLink.created_at.desc())
+        .all()
+    )
+
+
+def delete_share_link(db: Session, share_id: str, user_id: int) -> bool:
+    share_link = get_share_link_by_user(db, share_id, user_id)
+    if share_link:
+        db.delete(share_link)
+        db.commit()
+        return True
+    return False

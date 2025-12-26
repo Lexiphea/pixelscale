@@ -10,7 +10,7 @@ from slowapi.errors import RateLimitExceeded
 
 from .config import get_settings
 from .database import Base, engine
-from .routers import auth, health, images, stress
+from .routers import auth, health, images, share, stress
 from .routers.auth import limiter
 
 logging.basicConfig(level=logging.INFO)
@@ -45,6 +45,7 @@ if settings.use_local_storage:
 app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(images.router)
+app.include_router(share.router)
 app.include_router(stress.router)
 
 

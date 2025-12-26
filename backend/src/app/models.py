@@ -53,3 +53,32 @@ class Image(Base):
 
     def __repr__(self) -> str:
         return f"<Image(id={self.id}, filename={self.filename}, status={self.status})>"
+
+
+class ShareLink(Base):
+    """Shareable link for public access to an image with optional expiration."""
+    __tablename__ = "share_links"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)  # UUID
+    image_id: Mapped[int] = mapped_column(
+        ForeignKey("images.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)  # null = never expires
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+    image: Mapped["Image"] = relationship("Image")
+
+    def is_expired(self) -> bool:
+        if self.expires_at is None:
+            return False
+        # Handle both naive (SQLite) and aware datetimes
+        now = datetime.now(timezone.utc)
+        expires = self.expires_at
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=timezone.utc)
+        return now > expires
+
+    def __repr__(self) -> str:
+        return f"<ShareLink(id={self.id}, image_id={self.image_id}, expires_at={self.expires_at})>"

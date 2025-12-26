@@ -120,3 +120,44 @@ class UserResponse(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+# Share Link Schemas
+class ShareDuration(str, Enum):
+    ONE_DAY = "1_day"
+    ONE_WEEK = "1_week"
+    FOREVER = "forever"
+
+
+class ShareLinkCreate(BaseModel):
+    image_id: int
+    duration: ShareDuration = ShareDuration.ONE_WEEK
+
+
+class ShareLinkResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    share_id: str
+    share_url: str
+    expires_at: datetime | None
+
+
+class SharedImageResponse(BaseModel):
+    """Response for public shared image access."""
+    image_url: str
+    filename: str
+    expires_at: datetime | None
+
+
+class ShareLinkListItem(BaseModel):
+    """Item in the list of user's share links."""
+    model_config = ConfigDict(from_attributes=True)
+
+    share_id: str
+    image_id: int
+    image_filename: str
+    image_url: str | None
+    share_url: str
+    expires_at: datetime | None
+    created_at: datetime
+    is_expired: bool
