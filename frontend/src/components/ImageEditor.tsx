@@ -5,6 +5,7 @@ import { downloadImage } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { type Image as ImageType, api } from '@/lib/api';
 import { Download, Trash2 } from 'lucide-react';
+import { useProcessImage } from '@/hooks/useImages';
 
 interface ImageEditorProps {
     image: ImageType | null;
@@ -19,8 +20,8 @@ export default function ImageEditor({ image, isOpen, onClose, onDelete, onSave }
     const [contrast, setContrast] = useState(100);
     const [grayscale, setGrayscale] = useState(0);
     const [lastValidImage, setLastValidImage] = useState<ImageType | null>(image);
-    const [isSaving, setIsSaving] = useState(false);
     const [showOriginal, setShowOriginal] = useState(false);
+    const processImage = useProcessImage();
 
     useEffect(() => {
         if (image) {
@@ -152,11 +153,13 @@ export default function ImageEditor({ image, isOpen, onClose, onDelete, onSave }
                                 onClick={async () => {
                                     if (!displayImage) return;
                                     try {
-                                        setIsSaving(true);
-                                        const updatedImage = await api.processImage(displayImage.id, {
-                                            brightness: brightness - 100,
-                                            contrast: contrast - 100,
-                                            saturation: -grayscale,
+                                        const updatedImage = await processImage.mutateAsync({
+                                            id: displayImage.id,
+                                            options: {
+                                                brightness: brightness - 100,
+                                                contrast: contrast - 100,
+                                                saturation: -grayscale,
+                                            },
                                         });
                                         if (onSave) {
                                             onSave(updatedImage);
@@ -164,14 +167,12 @@ export default function ImageEditor({ image, isOpen, onClose, onDelete, onSave }
                                         onClose();
                                     } catch (error) {
                                         console.error('Failed to save:', error);
-                                    } finally {
-                                        setIsSaving(false);
                                     }
                                 }}
-                                disabled={isSaving}
+                                disabled={processImage.isPending}
                                 className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-black uppercase tracking-widest text-[10px] font-black"
                             >
-                                {isSaving ? 'Processing...' : 'Save Changes'}
+                                {processImage.isPending ? 'Processing...' : 'Save Changes'}
                             </Button>
 
                             <div className="flex gap-2">

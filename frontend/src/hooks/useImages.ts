@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, type Image } from '@/lib/api';
+import { api, type Image, type ImageProcessingOptions } from '@/lib/api';
 
 const PAGE_SIZE = 50;
 
@@ -112,6 +112,42 @@ export function useToggleFavorite() {
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ['images'] });
             queryClient.invalidateQueries({ queryKey: ['favorites'] });
+        },
+    });
+}
+
+export function useProcessImage() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ id, options }: { id: number; options: ImageProcessingOptions }) =>
+            api.processImage(id, options),
+        onSuccess: (updatedImage) => {
+            // Update the image in the 'images' cache
+            queryClient.setQueryData(['images'], (oldData: any) => {
+                if (!oldData) return oldData;
+                return {
+                    ...oldData,
+                    pages: oldData.pages.map((page: Image[]) =>
+                        page.map(img =>
+                            img.id === updatedImage.id ? updatedImage : img
+                        )
+                    ),
+                };
+            });
+
+            // Update the image in the 'favorites' cache
+            queryClient.setQueryData(['favorites'], (oldData: any) => {
+                if (!oldData) return oldData;
+                return {
+                    ...oldData,
+                    pages: oldData.pages.map((page: Image[]) =>
+                        page.map(img =>
+                            img.id === updatedImage.id ? updatedImage : img
+                        )
+                    ),
+                };
+            });
         },
     });
 }
