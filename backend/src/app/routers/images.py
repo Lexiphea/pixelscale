@@ -34,6 +34,18 @@ ALLOWED_CONTENT_TYPES = {
 }
 
 
+def _extract_processed_key(s3_url_processed: str) -> str:
+    """Extract the S3 key from a processed URL (works for both local and S3 URLs)."""
+    if s3_url_processed.startswith("/uploads/"):
+        return s3_url_processed.replace("/uploads/", "")
+    # For S3 URLs, extract everything after the bucket domain
+    # URL format: https://{bucket}.s3.{region}.amazonaws.com/{key}
+    if ".amazonaws.com/" in s3_url_processed:
+        return s3_url_processed.split(".amazonaws.com/", 1)[1]
+    # Fallback: return as-is
+    return s3_url_processed
+
+
 @router.post("/upload", response_model=ImageUploadResponse)
 async def upload_image(
     file: UploadFile = File(...),
@@ -234,7 +246,7 @@ async def delete_image(
     if image.s3_key_raw:
         s3.delete_file_from_s3(settings.s3_bucket_raw, image.s3_key_raw)
     if image.s3_url_processed:
-        processed_key = image.s3_url_processed.replace("/uploads/", "")
+        processed_key = _extract_processed_key(image.s3_url_processed)
         s3.delete_file_from_s3(settings.s3_bucket_processed, processed_key)
 
     crud.delete_image(db, image_id, user_id=current_user.id)
@@ -257,7 +269,7 @@ async def download_image(
 
     if version == "edited" and image.s3_url_processed:
         # Download processed/edited version
-        processed_key = image.s3_url_processed.replace("/uploads/", "")
+        processed_key = _extract_processed_key(image.s3_url_processed)
         filename_base = Path(image.filename).stem
         filename_ext = Path(processed_key).suffix or ".jpg"
         download_filename = f"{filename_base}_edited{filename_ext}"
