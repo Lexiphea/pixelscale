@@ -4,6 +4,7 @@ import { downloadImage, cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import ImageEditor from '@/components/ImageEditor';
 import ShareModal from '@/components/ShareModal';
+import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Loader2, Star, LayoutGrid, Image as ImageIcon, Download, Trash2, Upload as UploadIcon, Share2 } from 'lucide-react';
@@ -29,13 +30,19 @@ export default function Gallery() {
     const [error, setError] = useState<string | null>(null);
     const observerTarget = useRef<HTMLDivElement>(null);
     const [shareImage, setShareImage] = useState<Image | null>(null);
+    const [deleteId, setDeleteId] = useState<number | null>(null);
 
-    const handleDelete = async (id: number) => {
-        if (!window.confirm("Are you sure you want to delete this asset? This action cannot be undone.")) return;
+    const handleDelete = (id: number) => {
+        setDeleteId(id);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteId) return;
 
         try {
-            await deleteImage.mutateAsync(id);
-            if (selectedImage?.id === id) setSelectedImage(null);
+            await deleteImage.mutateAsync(deleteId);
+            if (selectedImage?.id === deleteId) setSelectedImage(null);
+            setDeleteId(null);
         } catch (error) {
             console.error("Failed to delete", error);
             setError("Failed to delete image");
@@ -285,6 +292,13 @@ export default function Gallery() {
                 image={shareImage}
                 isOpen={!!shareImage}
                 onClose={() => setShareImage(null)}
+            />
+
+            <DeleteConfirmModal
+                isOpen={!!deleteId}
+                onClose={() => setDeleteId(null)}
+                onConfirm={confirmDelete}
+                isDeleting={deleteImage.isPending}
             />
         </div>
     );

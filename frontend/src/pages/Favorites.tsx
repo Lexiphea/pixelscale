@@ -3,6 +3,7 @@ import { type Image } from '@/lib/api';
 import { downloadImage } from '@/lib/utils';
 import { api } from '@/lib/api';
 import ImageEditor from '@/components/ImageEditor';
+import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Loader2, Star, Image as ImageIcon, Download, Trash2 } from 'lucide-react';
@@ -26,17 +27,23 @@ export default function Favorites() {
 
     const [selectedImage, setSelectedImage] = useState<Image | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [deleteId, setDeleteId] = useState<number | null>(null);
     const observerTarget = useRef<HTMLDivElement>(null);
 
     // Track images that were unfavorited during this session (greyed out)
     const [unfavoritedIds, setUnfavoritedIds] = useState<Set<number>>(new Set());
 
-    const handleDelete = async (id: number) => {
-        if (!window.confirm("Are you sure you want to delete this asset? This action cannot be undone.")) return;
+    const handleDelete = (id: number) => {
+        setDeleteId(id);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteId) return;
 
         try {
-            await deleteFavorite.mutateAsync(id);
-            if (selectedImage?.id === id) setSelectedImage(null);
+            await deleteFavorite.mutateAsync(deleteId);
+            if (selectedImage?.id === deleteId) setSelectedImage(null);
+            setDeleteId(null);
         } catch (error) {
             console.error("Failed to delete", error);
             setError("Failed to delete image");
@@ -244,6 +251,13 @@ export default function Favorites() {
                 onSave={(updatedImage) => {
                     setSelectedImage(updatedImage);
                 }}
+            />
+
+            <DeleteConfirmModal
+                isOpen={!!deleteId}
+                onClose={() => setDeleteId(null)}
+                onConfirm={confirmDelete}
+                isDeleting={deleteFavorite.isPending}
             />
         </div>
     );
