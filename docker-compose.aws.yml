@@ -3,20 +3,34 @@ version: '3.8'
 services:
   backend:
     build: ./backend
+    container_name: pixelscale-backend
     restart: always
     ports:
       - "8000:8000"
     environment:
-      - ENVIRONMENT=production
-      - USE_LOCAL_STORAGE=False
-      # credentials should be passed via .env file or environment variables on the host
-    env_file:
-      - .env
+      - DATABASE_URL=${DATABASE_URL}
+      - S3_BUCKET_RAW=${S3_BUCKET_RAW}
+      - S3_BUCKET_PROCESSED=${S3_BUCKET_PROCESSED}
+      - AWS_REGION=${AWS_REGION}
+      - USE_LOCAL_STORAGE=false
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - LOG_LEVEL=INFO
+      - USE_CLOUDWATCH=false
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+    container_name: pixelscale-frontend
     restart: always
     ports:
       - "80:80"
