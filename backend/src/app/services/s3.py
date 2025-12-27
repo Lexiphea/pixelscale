@@ -22,6 +22,7 @@ def upload_file_to_s3(
     bucket: str,
     key: str,
     content_type: str = "image/jpeg",
+    cache_max_age: int = 31536000,  # 1 year default for immutable assets
 ) -> bool:
     if settings.use_local_storage:
         return _save_locally(file_content, key)
@@ -32,9 +33,12 @@ def upload_file_to_s3(
             io.BytesIO(file_content),
             bucket,
             key,
-            ExtraArgs={"ContentType": content_type},
+            ExtraArgs={
+                "ContentType": content_type,
+                "CacheControl": f"public, max-age={cache_max_age}, immutable",
+            },
         )
-        logger.info(f"Uploaded {key} to {bucket}")
+        logger.info(f"Uploaded {key} to {bucket} with cache-control")
         return True
     except ClientError as e:
         logger.error(f"Failed to upload {key} to {bucket}: {e}")

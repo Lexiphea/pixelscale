@@ -252,6 +252,9 @@ async def download_image(
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
 
+    # Cache headers for immutable image assets (1 year)
+    cache_headers = {"Cache-Control": "public, max-age=31536000, immutable"}
+
     if version == "edited" and image.s3_url_processed:
         # Download processed/edited version
         processed_key = image.s3_url_processed.replace("/uploads/", "")
@@ -263,7 +266,7 @@ async def download_image(
             path = Path(settings.local_storage_path) / processed_key
             if not path.exists():
                 raise HTTPException(status_code=404, detail="Processed file not found")
-            return FileResponse(path, filename=download_filename)
+            return FileResponse(path, filename=download_filename, headers=cache_headers)
 
         url = s3.generate_presigned_download_url(
             settings.s3_bucket_processed,
@@ -276,7 +279,7 @@ async def download_image(
             path = Path(settings.local_storage_path) / image.s3_key_raw
             if not path.exists():
                 raise HTTPException(status_code=404, detail="File not found on server")
-            return FileResponse(path, filename=image.filename)
+            return FileResponse(path, filename=image.filename, headers=cache_headers)
 
         url = s3.generate_presigned_download_url(
             settings.s3_bucket_raw,
@@ -288,3 +291,4 @@ async def download_image(
         raise HTTPException(status_code=500, detail="Failed to generate download URL")
 
     return RedirectResponse(url)
+

@@ -2,13 +2,13 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from .config import get_settings
 from .database import Base, engine
 from .logging_config import get_logger, setup_logging
+from .middleware.caching_static import CachingStaticFiles
 from .middleware.logging_middleware import LoggingMiddleware
 from .routers import auth, health, images, share, stress
 from .routers.auth import limiter
@@ -47,8 +47,8 @@ logger.info("PixelScale API starting up")
 if settings.use_local_storage:
     uploads_path = Path(settings.local_storage_path)
     uploads_path.mkdir(parents=True, exist_ok=True)
-    app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
-    logger.info(f"Using local storage: {uploads_path}")
+    app.mount("/uploads", CachingStaticFiles(directory=str(uploads_path)), name="uploads")
+    logger.info(f"Using local storage with caching: {uploads_path}")
 
 app.include_router(health.router)
 app.include_router(auth.router)
