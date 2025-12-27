@@ -39,6 +39,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add Gzip compression for API responses (60-80% smaller)
+from starlette.middleware.gzip import GZipMiddleware
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
 # Add logging middleware (must be after CORS)
 app.add_middleware(LoggingMiddleware)
 

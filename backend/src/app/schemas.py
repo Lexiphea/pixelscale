@@ -41,7 +41,7 @@ class ImageProcessingOptions(BaseModel):
     contrast: int = Field(0, ge=-100, le=100)
     saturation: int = Field(0, ge=-100, le=100)
 
-    format: ImageFormat = ImageFormat.JPEG
+    format: ImageFormat = ImageFormat.WEBP
     quality: int = Field(85, ge=1, le=100)
 
 
