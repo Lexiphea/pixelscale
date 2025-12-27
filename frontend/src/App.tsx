@@ -1,4 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './lib/queryClient';
 import { AuthProvider } from './lib/auth';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -21,27 +23,30 @@ const About = () => (
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/s/:shareId" element={<SharedImage />} />
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/s/:shareId" element={<SharedImage />} />
 
-          <Route element={<Layout />}>
-            <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<Gallery />} />
-              <Route path="/favorites" element={<Favorites />} />
-              <Route path="/upload" element={<Upload />} />
-              <Route path="/shared" element={<Shared />} />
+            <Route element={<Layout />}>
+              <Route element={<ProtectedRoute />}>
+                <Route path="/" element={<Gallery />} />
+                <Route path="/favorites" element={<Favorites />} />
+                <Route path="/upload" element={<Upload />} />
+                <Route path="/shared" element={<Shared />} />
+              </Route>
+              <Route path="/about" element={<About />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
-            <Route path="/about" element={<About />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        </Routes>
-      </Router>
-    </AuthProvider>
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 
 export default App;
+

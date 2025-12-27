@@ -1,46 +1,40 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
-import { api, type Image } from '@/lib/api';
+import { useState, useRef, useEffect } from 'react';
+import { type Image } from '@/lib/api';
 import { downloadImage, cn } from '@/lib/utils';
+import { api } from '@/lib/api';
 import ImageEditor from '@/components/ImageEditor';
 import ShareModal from '@/components/ShareModal';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Loader2, Star, LayoutGrid, Image as ImageIcon, Download, Trash2, Upload as UploadIcon, Share2 } from 'lucide-react';
+import { useImages, useDeleteImage, useToggleFavorite } from '@/hooks/useImages';
 
 export default function Gallery() {
-    const [images, setImages] = useState<Image[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const {
+        data,
+        isLoading,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+        error: queryError
+    } = useImages();
+
+    const deleteImage = useDeleteImage();
+    const toggleFavorite = useToggleFavorite();
+
+    // Flatten pages into single array
+    const images = data?.pages.flat() ?? [];
+
     const [selectedImage, setSelectedImage] = useState<Image | null>(null);
-    const [hasMore, setHasMore] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const observerTarget = useRef<HTMLDivElement>(null);
-    const isLoadingMore = useRef(false);
-    const [isFetchingMore, setIsFetchingMore] = useState(false);
     const [shareImage, setShareImage] = useState<Image | null>(null);
-
-    useEffect(() => {
-        loadInitial();
-    }, []);
-
-    const loadInitial = async () => {
-        try {
-            setLoading(true);
-            const data = await api.getImages(0, 50);
-            setImages(data);
-            if (data.length < 50) setHasMore(false);
-        } catch {
-            setError('Failed to load images. Please check your connection and try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleDelete = async (id: number) => {
         if (!window.confirm("Are you sure you want to delete this asset? This action cannot be undone.")) return;
 
         try {
-            await api.deleteImage(id);
-            setImages(prev => prev.filter(img => img.id !== id));
+            await deleteImage.mutateAsync(id);
             if (selectedImage?.id === id) setSelectedImage(null);
         } catch (error) {
             console.error("Failed to delete", error);
@@ -52,8 +46,7 @@ export default function Gallery() {
     const handleToggleFavorite = async (id: number, e: React.MouseEvent) => {
         e.stopPropagation();
         try {
-            const updatedImage = await api.toggleFavorite(id);
-            setImages(prev => prev.map(img => img.id === id ? updatedImage : img));
+            await toggleFavorite.mutateAsync(id);
         } catch (error) {
             console.error("Failed to toggle favorite", error);
             setError("Failed to update favorite");
@@ -61,42 +54,12 @@ export default function Gallery() {
         }
     };
 
-    const loadMore = useCallback(async () => {
-        if (isLoadingMore.current || !hasMore) return;
-
-        try {
-            isLoadingMore.current = true;
-            setIsFetchingMore(true);
-
-            // Get current length via functional update to avoid stale closure
-            let currentLength = 0;
-            setImages(prev => {
-                currentLength = prev.length;
-                return prev;
-            });
-
-            const newImages = await api.getImages(currentLength, 50);
-
-            if (newImages.length < 50) {
-                setHasMore(false);
-            }
-
-            if (newImages.length > 0) {
-                setImages(prev => [...prev, ...newImages]);
-            }
-        } catch (error) {
-            console.error('Failed to load more images:', error);
-        } finally {
-            isLoadingMore.current = false;
-            setIsFetchingMore(false);
-        }
-    }, [hasMore]);
-
+    // Infinite scroll observer
     useEffect(() => {
         const observer = new IntersectionObserver(
             entries => {
-                if (entries[0].isIntersecting && !loading && hasMore) {
-                    loadMore();
+                if (entries[0].isIntersecting && !isLoading && hasNextPage && !isFetchingNextPage) {
+                    fetchNextPage();
                 }
             },
             { threshold: 0.1 }
@@ -107,7 +70,10 @@ export default function Gallery() {
         }
 
         return () => observer.disconnect();
-    }, [loadMore, loading, hasMore]);
+    }, [fetchNextPage, isLoading, hasNextPage, isFetchingNextPage]);
+
+    // Display error from query if any
+    const displayError = error || (queryError ? 'Failed to load images. Please check your connection and try again.' : null);
 
     return (
         <div className="space-y-10 max-w-[1600px] mx-auto">
@@ -169,16 +135,16 @@ export default function Gallery() {
                 </Link>
             </div>
 
-            {error && (
+            {displayError && (
                 <div className="p-4 rounded-xl bg-destructive/10 text-destructive border border-destructive/20 backdrop-blur-md">
                     <p className="text-sm font-medium flex items-center gap-2">
                         <div className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
-                        {error}
+                        {displayError}
                     </p>
                 </div>
             )}
 
-            {loading ? (
+            {isLoading ? (
                 <div className="flex h-[40vh] flex-col items-center justify-center gap-6">
                     <div className="relative">
                         <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full scale-150 animate-pulse" />
@@ -260,9 +226,9 @@ export default function Gallery() {
                         ))}
                     </div>
 
-                    {(isFetchingMore || hasMore) && (
+                    {(isFetchingNextPage || hasNextPage) && (
                         <div ref={observerTarget} className="h-24 w-full flex items-center justify-center py-8">
-                            {isFetchingMore && (
+                            {isFetchingNextPage && (
                                 <div className="flex flex-col items-center gap-2">
                                     <Loader2 className="h-6 w-6 animate-spin text-primary" />
                                     <span className="text-xs uppercase tracking-widest text-primary/50 font-medium animate-pulse">
@@ -273,7 +239,7 @@ export default function Gallery() {
                         </div>
                     )}
 
-                    {!hasMore && images.length > 0 && (
+                    {!hasNextPage && images.length > 0 && (
                         <div className="text-center py-12 pb-24">
                             <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-white/5 border border-white/5 backdrop-blur-sm">
                                 <div className="h-1.5 w-1.5 rounded-full bg-primary/50 animate-pulse" />
@@ -310,9 +276,7 @@ export default function Gallery() {
                 onClose={() => setSelectedImage(null)}
                 onDelete={handleDelete}
                 onSave={(updatedImage) => {
-                    setImages(prev => prev.map(img =>
-                        img.id === updatedImage.id ? updatedImage : img
-                    ));
+                    // Note: The cache will be updated by React Query
                     setSelectedImage(updatedImage);
                 }}
             />
