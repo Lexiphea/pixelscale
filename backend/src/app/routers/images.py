@@ -147,6 +147,18 @@ async def reprocess_image(
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
 
+    # Detect original format from the raw file and use it for edited images
+    # This preserves the original format instead of converting to webp
+    original_ext = Path(image.s3_key_raw).suffix.lower().lstrip(".")
+    format_mapping = {
+        "jpg": ImageFormat.JPEG,
+        "jpeg": ImageFormat.JPEG,
+        "png": ImageFormat.PNG,
+        "webp": ImageFormat.WEBP,
+    }
+    if original_ext in format_mapping:
+        options.format = format_mapping[original_ext]
+
     result = process_image(image.s3_key_raw, options=options)
     if result:
         processed_key, processed_url = result
