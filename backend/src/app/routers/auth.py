@@ -14,6 +14,7 @@ from ..schemas import Token, UserCreate, UserLogin, UserResponse
 from ..services.auth import (
     create_access_token,
     get_current_user,
+    get_current_user_with_display_name,
     get_username_display,
     hash_username,
     verify_password,
@@ -78,9 +79,8 @@ async def login(
         )
 
     access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
-    # Use hashed username in JWT (matches what's stored in DB)
     access_token = create_access_token(
-        data={"sub": user.username},  # user.username is already hashed
+        data={"sub": user.username, "display_name": user_data.username},
         expires_delta=access_token_expires,
     )
     
@@ -90,8 +90,14 @@ async def login(
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(
-    current_user: User = Depends(get_current_user),
+    user_data: tuple[User, str | None] = Depends(get_current_user_with_display_name),
 ):
     """Get current authenticated user's information."""
-    logger.info(f"User info requested | User: {current_user.username[:12]}")
-    return current_user
+    user, display_name = user_data
+    logger.info(f"User info requested | User: {user.username[:12]}")
+    return UserResponse(
+        id=user.id,
+        username=display_name or user.username,
+        is_active=user.is_active,
+        created_at=user.created_at,
+    )

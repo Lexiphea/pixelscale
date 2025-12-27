@@ -41,11 +41,9 @@ export default function ImageEditor({ image, isOpen, onClose, onDelete, onSave }
     const displayImage = image || lastValidImage;
     if (!displayImage) return null;
 
-    const hasOptions = !!displayImage.options;
-
-    const effectiveImageSource = (showOriginal || hasOptions) && displayImage.original_url
-        ? displayImage.original_url
-        : displayImage.url;
+    const effectiveImageSource = showOriginal
+        ? (displayImage.original_url || displayImage.url)
+        : (displayImage.url || displayImage.original_url || '');
 
     const filterString = showOriginal ? 'none' : `brightness(${brightness}%) contrast(${contrast}%) grayscale(${grayscale}%)`;
 

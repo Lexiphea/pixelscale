@@ -67,8 +67,12 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     return encoded_jwt
 
 
-def _decode_and_get_user(token: str, db: Session) -> User:
-    """Shared helper to decode JWT token and retrieve user."""
+def _decode_and_get_user(token: str, db: Session, return_display_name: bool = False) -> User | tuple[User, str | None]:
+    """Shared helper to decode JWT token and retrieve user.
+    
+    If return_display_name is True, returns (user, display_name) tuple.
+    Otherwise, returns just the user.
+    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -81,6 +85,7 @@ def _decode_and_get_user(token: str, db: Session) -> User:
             algorithms=[settings.jwt_algorithm]
         )
         username: str | None = payload.get("sub")
+        display_name: str | None = payload.get("display_name")
         if username is None:
             raise credentials_exception
     except JWTError:
@@ -94,6 +99,9 @@ def _decode_and_get_user(token: str, db: Session) -> User:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Inactive user"
         )
+    
+    if return_display_name:
+        return user, display_name
     return user
 
 
@@ -104,8 +112,17 @@ def get_current_user(
     return _decode_and_get_user(token, db)
 
 
+def get_current_user_with_display_name(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> tuple[User, str | None]:
+    """Get current user along with their display name from the JWT token."""
+    return _decode_and_get_user(token, db, return_display_name=True)
+
+
 def get_current_user_from_token(
     token: str = Query(...),
     db: Session = Depends(get_db),
 ) -> User:
     return _decode_and_get_user(token, db)
+
