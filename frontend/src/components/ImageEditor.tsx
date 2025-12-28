@@ -39,17 +39,17 @@ export default function ImageEditor({ image, isOpen, onClose, onDelete, onSave }
         }
     }, [image]);
 
+    // Hooks must be called before any early returns (React rules of hooks)
+    const deferredBrightness = useDeferredValue(brightness);
+    const deferredContrast = useDeferredValue(contrast);
+    const deferredGrayscale = useDeferredValue(grayscale);
+
     const displayImage = image || lastValidImage;
     if (!displayImage) return null;
 
     const effectiveImageSource = showOriginal
         ? (displayImage.original_url || displayImage.url)
         : (displayImage.edited_url || displayImage.url || displayImage.original_url || '');
-
-    // Use deferred values for smoother slider interaction
-    const deferredBrightness = useDeferredValue(brightness);
-    const deferredContrast = useDeferredValue(contrast);
-    const deferredGrayscale = useDeferredValue(grayscale);
 
     const filterString = showOriginal ? 'none' : `brightness(${deferredBrightness}%) contrast(${deferredContrast}%) grayscale(${deferredGrayscale}%)`;
 
