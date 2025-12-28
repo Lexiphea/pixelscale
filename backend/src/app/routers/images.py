@@ -125,7 +125,7 @@ async def upload_image(
         url = processed_url
     else:
         crud.update_image_failed(db, image.id)
-        url = s3.get_public_url(settings.s3_bucket_raw, raw_key)
+        url = s3.generate_presigned_url(settings.s3_bucket_raw, raw_key)
 
     return ImageUploadResponse(
         id=image.id,
@@ -167,7 +167,7 @@ async def reprocess_image(
             user_index=image.user_index,
             filename=image.filename,
             url=image.s3_url_processed,
-            original_url=s3.get_public_url(settings.s3_bucket_raw, image.s3_key_raw),
+            original_url=s3.generate_presigned_url(settings.s3_bucket_raw, image.s3_key_raw),
             edited_url=edited_url,
             options_applied=options,
         )
@@ -187,7 +187,7 @@ async def get_images(
         ImageResponse.from_orm_with_url(
             img,
             img.s3_url_processed,
-            original_url=s3.get_public_url(settings.s3_bucket_raw, img.s3_key_raw),
+            original_url=s3.generate_presigned_url(settings.s3_bucket_raw, img.s3_key_raw),
         )
         for img in images
     ]
@@ -205,7 +205,7 @@ async def get_favorite_images(
         ImageResponse.from_orm_with_url(
             img,
             img.s3_url_processed,
-            original_url=s3.get_public_url(settings.s3_bucket_raw, img.s3_key_raw),
+            original_url=s3.generate_presigned_url(settings.s3_bucket_raw, img.s3_key_raw),
         )
         for img in images
     ]
@@ -224,7 +224,7 @@ async def toggle_favorite(
     return ImageResponse.from_orm_with_url(
         image,
         image.s3_url_processed,
-        original_url=s3.get_public_url(settings.s3_bucket_raw, image.s3_key_raw),
+        original_url=s3.generate_presigned_url(settings.s3_bucket_raw, image.s3_key_raw),
     )
 
 
@@ -241,7 +241,7 @@ async def get_image(
     return ImageResponse.from_orm_with_url(
         image,
         image.s3_url_processed,
-        original_url=s3.get_public_url(settings.s3_bucket_raw, image.s3_key_raw),
+        original_url=s3.generate_presigned_url(settings.s3_bucket_raw, image.s3_key_raw),
     )
 
 

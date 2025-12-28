@@ -173,7 +173,7 @@ export default function Gallery() {
                             >
                                 <div className="relative overflow-hidden rounded-2xl border border-white/5 bg-[#0A0A0A] transition-all duration-300 group-hover:border-primary/50 group-hover:shadow-[0_0_30px_-5px_rgba(16,185,129,0.2)] group-hover:-translate-y-2">
                                     <img
-                                        src={img.url}
+                                        src={img.edited_url || img.url}
                                         alt={`Image ${img.id}`}
                                         className="w-full h-auto block transition-transform duration-500 group-hover:scale-110"
                                         loading="lazy"

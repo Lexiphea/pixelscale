@@ -30,8 +30,8 @@ def create_share_link(
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
 
-    # Create share link
-    share_link = crud.create_share_link(db, data.image_id, data.duration.value)
+    # Create share link with version
+    share_link = crud.create_share_link(db, data.image_id, data.duration.value, data.version.value)
 
     # Build share URL
     base_url = str(request.base_url).rstrip("/")
@@ -128,37 +128,45 @@ def get_shared_image(
     # Generate presigned URL for the image
     # Use processed image if available, otherwise raw
     
-    # For local storage, s3_url_processed already contains the local path
+    # Determine which image version to share based on stored version
+    use_edited = share_link.version == "edited"
+    
+    # For local storage
     if settings.use_local_storage:
-        s3_key = image.s3_url_processed or image.s3_key_raw
+        if use_edited and image.s3_url_edited:
+            s3_key = image.s3_url_edited
+        elif use_edited and image.s3_url_processed:
+            s3_key = image.s3_url_processed
+        else:
+            s3_key = image.s3_key_raw
         image_url = s3_key if s3_key.startswith("/") else f"/uploads/{s3_key}"
     else:
-        # For S3, we need to extract just the key from s3_url_processed
-        # s3_url_processed contains a full S3 URL like:
-        # https://bucket.s3.region.amazonaws.com/processed/medium/xxx.jpeg
-        # We need just the key: processed/medium/xxx.jpeg
-        if image.s3_url_processed:
-            # Extract key from full S3 URL
-            s3_url = image.s3_url_processed
-            logger.debug(f"[get_shared_image] Processing s3_url_processed: {s3_url}")
-            # URL format: https://bucket.s3.region.amazonaws.com/key
+        # For S3 - choose version based on share link setting
+        if use_edited and image.s3_url_edited:
+            # Use edited version (full quality edits)
+            s3_url = image.s3_url_edited
+            logger.debug(f"[get_shared_image] Using edited version: {s3_url}")
             if s3_url.startswith("https://"):
-                # Remove the domain part to get just the key
                 parts = s3_url.split(".amazonaws.com/", 1)
-                if len(parts) == 2:
-                    s3_key = parts[1]
-                else:
-                    # Fallback: try to extract path after the domain
-                    s3_key = s3_url.split("/", 3)[-1] if "/" in s3_url else s3_url
-                    logger.debug(f"[get_shared_image] Used fallback key extraction: {s3_key}")
+                s3_key = parts[1] if len(parts) == 2 else s3_url.split("/", 3)[-1]
+            else:
+                s3_key = s3_url
+            bucket = settings.s3_bucket_processed
+        elif use_edited and image.s3_url_processed:
+            # Fallback to display version if no edited version
+            s3_url = image.s3_url_processed
+            logger.debug(f"[get_shared_image] Using processed version: {s3_url}")
+            if s3_url.startswith("https://"):
+                parts = s3_url.split(".amazonaws.com/", 1)
+                s3_key = parts[1] if len(parts) == 2 else s3_url.split("/", 3)[-1]
             else:
                 s3_key = s3_url
             bucket = settings.s3_bucket_processed
         else:
-            # Use raw image if no processed version
+            # Use original version
             s3_key = image.s3_key_raw
             bucket = settings.s3_bucket_raw
-            logger.debug(f"[get_shared_image] No processed URL, using raw key: {s3_key}")
+            logger.debug(f"[get_shared_image] Using original version: {s3_key}")
         
         logger.debug(f"[get_shared_image] Generating presigned URL for bucket={bucket}, key={s3_key}")
         

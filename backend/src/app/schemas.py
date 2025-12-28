@@ -138,9 +138,15 @@ class ShareDuration(str, Enum):
     FOREVER = "forever"
 
 
+class ShareVersion(str, Enum):
+    EDITED = "edited"
+    ORIGINAL = "original"
+
+
 class ShareLinkCreate(BaseModel):
     image_id: int
     duration: ShareDuration = ShareDuration.ONE_WEEK
+    version: ShareVersion = ShareVersion.EDITED
 
 
 class ShareLinkResponse(BaseModel):

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { api, type ShareDuration, type Image as ImageType } from '@/lib/api';
+import { api, type ShareDuration, type ShareVersion, type Image as ImageType } from '@/lib/api';
 import { Share2, Copy, Check, Link, Clock, Loader2 } from 'lucide-react';
 
 interface ShareModalProps {
@@ -16,8 +16,14 @@ const DURATION_OPTIONS: { value: ShareDuration; label: string; description: stri
     { value: 'forever', label: 'Forever', description: 'Never expires' },
 ];
 
+const VERSION_OPTIONS: { value: ShareVersion; label: string }[] = [
+    { value: 'edited', label: 'Edited' },
+    { value: 'original', label: 'Original' },
+];
+
 export default function ShareModal({ image, isOpen, onClose }: ShareModalProps) {
     const [duration, setDuration] = useState<ShareDuration>('1_week');
+    const [version, setVersion] = useState<ShareVersion>('edited');
     const [isGenerating, setIsGenerating] = useState(false);
     const [shareUrl, setShareUrl] = useState<string | null>(null);
     const [expiresAt, setExpiresAt] = useState<string | null>(null);
@@ -31,7 +37,7 @@ export default function ShareModal({ image, isOpen, onClose }: ShareModalProps) 
         setError(null);
 
         try {
-            const result = await api.createShareLink(image.id, duration);
+            const result = await api.createShareLink(image.id, duration, version);
             // Convert backend URL to frontend URL for sharing
             const frontendShareUrl = `${window.location.origin}/s/${result.share_id}`;
             setShareUrl(frontendShareUrl);
@@ -122,8 +128,29 @@ export default function ShareModal({ image, isOpen, onClose }: ShareModalProps) 
                                             key={option.value}
                                             onClick={() => setDuration(option.value)}
                                             className={`p-3 rounded-xl border transition-all text-center ${duration === option.value
-                                                    ? 'bg-primary/20 border-primary/50 text-primary'
-                                                    : 'bg-white/[0.02] border-white/10 text-white/70 hover:bg-white/5 hover:border-white/20'
+                                                ? 'bg-primary/20 border-primary/50 text-primary'
+                                                : 'bg-white/[0.02] border-white/10 text-white/70 hover:bg-white/5 hover:border-white/20'
+                                                }`}
+                                        >
+                                            <div className="text-sm font-bold">{option.label}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Version Selection */}
+                            <div className="space-y-3">
+                                <label className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                                    Share Version
+                                </label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {VERSION_OPTIONS.map((option) => (
+                                        <button
+                                            key={option.value}
+                                            onClick={() => setVersion(option.value)}
+                                            className={`p-3 rounded-xl border transition-all text-center ${version === option.value
+                                                ? 'bg-primary/20 border-primary/50 text-primary'
+                                                : 'bg-white/[0.02] border-white/10 text-white/70 hover:bg-white/5 hover:border-white/20'
                                                 }`}
                                         >
                                             <div className="text-sm font-bold">{option.label}</div>

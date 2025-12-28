@@ -71,6 +71,7 @@ class ShareLink(Base):
     image_id: Mapped[int] = mapped_column(
         ForeignKey("images.id", ondelete="CASCADE"), nullable=False, index=True
     )
+    version: Mapped[str] = mapped_column(String(10), default="edited")
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)  # null = never expires
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc), nullable=False

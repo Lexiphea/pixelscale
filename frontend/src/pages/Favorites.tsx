@@ -153,7 +153,7 @@ export default function Favorites() {
                                 >
                                     <div className="relative overflow-hidden rounded-xl border border-white/5 bg-card transition-all duration-300 group-hover:border-primary/20 group-hover:shadow-[0_0_40px_-10px_rgba(16,185,129,0.1)] group-hover:-translate-y-1">
                                         <img
-                                            src={img.url}
+                                            src={img.edited_url || img.url}
                                             alt={`Image ${img.id}`}
                                             className="w-full h-auto block transition-transform duration-500 group-hover:scale-105"
                                             loading="lazy"

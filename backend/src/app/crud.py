@@ -161,6 +161,7 @@ def create_share_link(
     db: Session,
     image_id: int,
     duration: str,
+    version: str = "edited",
 ) -> "ShareLink":
     from datetime import datetime, timedelta, timezone
     from uuid import uuid4
@@ -177,6 +178,7 @@ def create_share_link(
     share_link = ShareLink(
         id=str(uuid4()),
         image_id=image_id,
+        version=version,
         expires_at=expires_at,
     )
     db.add(share_link)

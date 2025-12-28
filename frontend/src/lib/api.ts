@@ -169,14 +169,14 @@ export const api = {
     },
 
     // Share Link Endpoints
-    createShareLink: async (imageId: number, duration: ShareDuration): Promise<ShareLinkResponse> => {
+    createShareLink: async (imageId: number, duration: ShareDuration, version: ShareVersion = 'edited'): Promise<ShareLinkResponse> => {
         const res = await fetch(`${BASE_URL}/api/share`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 ...getAuthHeaders(),
             },
-            body: JSON.stringify({ image_id: imageId, duration }),
+            body: JSON.stringify({ image_id: imageId, duration, version }),
         });
         return handleResponse(res);
     },
@@ -222,6 +222,7 @@ export const api = {
 
 // Share Link Types
 export type ShareDuration = '1_day' | '1_week' | 'forever';
+export type ShareVersion = 'edited' | 'original';
 
 export interface ShareLinkResponse {
     share_id: string;
