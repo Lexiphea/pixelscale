@@ -51,7 +51,7 @@ def process_image(
         output_buffer = io.BytesIO()
         save_format = options.format.value.upper()
         if save_format == "JPEG":
-            img.save(output_buffer, format="JPEG", quality=options.quality, optimize=True)
+            img.save(output_buffer, format="JPEG", quality=options.quality, optimize=True, progressive=True)
         elif save_format == "PNG":
             img.save(output_buffer, format="PNG", optimize=True)
         elif save_format == "WEBP":

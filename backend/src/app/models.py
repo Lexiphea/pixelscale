@@ -46,6 +46,7 @@ class Image(Base):
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
     s3_key_raw: Mapped[str] = mapped_column(String(255), nullable=False)
     s3_url_processed: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    s3_url_edited: Mapped[str | None] = mapped_column(String(512), nullable=True)
     status: Mapped[ImageStatus] = mapped_column(
         Enum(ImageStatus), default=ImageStatus.PENDING
     )

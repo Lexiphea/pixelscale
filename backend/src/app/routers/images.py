@@ -147,8 +147,7 @@ async def reprocess_image(
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
 
-    # Detect original format from the raw file and use it for edited images
-    # This preserves the original format instead of converting to webp
+    # Preserve original format for edits
     original_ext = Path(image.s3_key_raw).suffix.lower().lstrip(".")
     format_mapping = {
         "jpg": ImageFormat.JPEG,
@@ -161,14 +160,15 @@ async def reprocess_image(
 
     result = process_image(image.s3_key_raw, options=options)
     if result:
-        processed_key, processed_url = result
-        crud.update_image_processed(db, image.id, processed_url, options.model_dump())
+        edited_key, edited_url = result
+        crud.update_image_edited(db, image.id, edited_url, options.model_dump())
         return ImageUploadResponse(
             id=image.id,
             user_index=image.user_index,
             filename=image.filename,
-            url=processed_url,
+            url=image.s3_url_processed,
             original_url=s3.get_public_url(settings.s3_bucket_raw, image.s3_key_raw),
+            edited_url=edited_url,
             options_applied=options,
         )
 
@@ -260,6 +260,9 @@ async def delete_image(
     if image.s3_url_processed:
         processed_key = _extract_processed_key(image.s3_url_processed)
         s3.delete_file_from_s3(settings.s3_bucket_processed, processed_key)
+    if image.s3_url_edited:
+        edited_key = _extract_processed_key(image.s3_url_edited)
+        s3.delete_file_from_s3(settings.s3_bucket_processed, edited_key)
 
     crud.delete_image(db, image_id, user_id=current_user.id)
     return {"message": "Image deleted", "id": image_id}
@@ -279,22 +282,22 @@ async def download_image(
     # Cache headers for immutable image assets (1 year)
     cache_headers = {"Cache-Control": "public, max-age=31536000, immutable"}
 
-    if version == "edited" and image.s3_url_processed:
-        # Download processed/edited version
-        processed_key = _extract_processed_key(image.s3_url_processed)
+    if version == "edited" and image.s3_url_edited:
+        # Download edited version (separate from display webp)
+        edited_key = _extract_processed_key(image.s3_url_edited)
         filename_base = Path(image.filename).stem
-        filename_ext = Path(processed_key).suffix or ".jpg"
+        filename_ext = Path(edited_key).suffix or ".jpg"
         download_filename = f"{filename_base}_edited{filename_ext}"
 
         if settings.use_local_storage:
-            path = Path(settings.local_storage_path) / processed_key
+            path = Path(settings.local_storage_path) / edited_key
             if not path.exists():
-                raise HTTPException(status_code=404, detail="Processed file not found")
+                raise HTTPException(status_code=404, detail="Edited file not found")
             return FileResponse(path, filename=download_filename, headers=cache_headers)
 
         url = s3.generate_presigned_download_url(
             settings.s3_bucket_processed,
-            processed_key,
+            edited_key,
             download_filename
         )
     else:

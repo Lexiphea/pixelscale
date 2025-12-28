@@ -3,6 +3,7 @@ export interface Image {
     user_index: number;
     url: string;
     original_url?: string;
+    edited_url?: string;
     options?: ImageProcessingOptions;
     filename?: string;
     uploaded_at?: string;
@@ -70,6 +71,7 @@ const transformImageUrls = (img: Image): Image => ({
     ...img,
     url: img.url?.startsWith('/') ? `${BASE_URL}${img.url}` : img.url,
     original_url: img.original_url?.startsWith('/') ? `${BASE_URL}${img.original_url}` : img.original_url,
+    edited_url: img.edited_url?.startsWith('/') ? `${BASE_URL}${img.edited_url}` : img.edited_url,
 });
 
 export const api = {

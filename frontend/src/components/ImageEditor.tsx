@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useDeferredValue } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { downloadImage } from '@/lib/utils';
@@ -44,9 +44,14 @@ export default function ImageEditor({ image, isOpen, onClose, onDelete, onSave }
 
     const effectiveImageSource = showOriginal
         ? (displayImage.original_url || displayImage.url)
-        : (displayImage.url || displayImage.original_url || '');
+        : (displayImage.edited_url || displayImage.url || displayImage.original_url || '');
 
-    const filterString = showOriginal ? 'none' : `brightness(${brightness}%) contrast(${contrast}%) grayscale(${grayscale}%)`;
+    // Use deferred values for smoother slider interaction
+    const deferredBrightness = useDeferredValue(brightness);
+    const deferredContrast = useDeferredValue(contrast);
+    const deferredGrayscale = useDeferredValue(grayscale);
+
+    const filterString = showOriginal ? 'none' : `brightness(${deferredBrightness}%) contrast(${deferredContrast}%) grayscale(${deferredGrayscale}%)`;
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>

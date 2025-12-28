@@ -109,6 +109,22 @@ def update_image_failed(db: Session, image_id: int) -> Image | None:
     return image
 
 
+def update_image_edited(
+    db: Session,
+    image_id: int,
+    s3_url_edited: str,
+    options: dict | None = None,
+) -> Image | None:
+    image = db.query(Image).filter(Image.id == image_id).first()
+    if image:
+        image.s3_url_edited = s3_url_edited
+        if options:
+            image.options = options
+        db.commit()
+        db.refresh(image)
+    return image
+
+
 def delete_image(db: Session, image_id: int, user_id: int) -> bool:
     image = get_image(db, image_id, user_id)
     if image:

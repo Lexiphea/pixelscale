@@ -61,18 +61,26 @@ class ImageResponse(BaseModel):
     filename: str
     url: str | None = None
     original_url: str | None = None
+    edited_url: str | None = None
     options: ImageProcessingOptions | None = None
     uploaded_at: datetime
     is_favorite: bool = False
 
     @classmethod
-    def from_orm_with_url(cls, image, url: str | None = None, original_url: str | None = None) -> "ImageResponse":
+    def from_orm_with_url(
+        cls,
+        image,
+        url: str | None = None,
+        original_url: str | None = None,
+        edited_url: str | None = None,
+    ) -> "ImageResponse":
         return cls(
             id=image.id,
             user_index=image.user_index,
             filename=image.filename,
             url=url or image.s3_url_processed,
             original_url=original_url,
+            edited_url=edited_url or image.s3_url_edited,
             options=ImageProcessingOptions(**image.options) if image.options else None,
             uploaded_at=image.upload_date,
             is_favorite=image.is_favorite,
@@ -85,6 +93,7 @@ class ImageUploadResponse(BaseModel):
     filename: str
     url: str | None = None
     original_url: str | None = None
+    edited_url: str | None = None
     options_applied: ImageProcessingOptions | None = None
 
 

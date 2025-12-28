@@ -18,6 +18,7 @@ export function useImages() {
             return allPages.flat().length;
         },
         initialPageParam: 0,
+        staleTime: 5 * 60 * 1000,
     });
 
     // Prefetch next page when current data loads
