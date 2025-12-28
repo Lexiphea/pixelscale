@@ -160,6 +160,15 @@ export const api = {
         return transformImageUrls(img);
     },
 
+    revertImage: async (id: number): Promise<Image> => {
+        const res = await fetch(`${BASE_URL}/api/images/${id}/revert`, {
+            method: 'POST',
+            headers: { ...getAuthHeaders() },
+        });
+        const img: Image = await handleResponse(res);
+        return transformImageUrls(img);
+    },
+
     getFavorites: async (skip: number = 0, limit: number = 50): Promise<Image[]> => {
         const res = await fetch(`${BASE_URL}/api/images/favorites?skip=${skip}&limit=${limit}`, {
             headers: { ...getAuthHeaders() },

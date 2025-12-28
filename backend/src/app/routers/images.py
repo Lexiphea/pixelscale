@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from .. import crud
+from ..crud import ImageNotFoundError, NoEditToRevertError
 from ..config import get_settings
 from ..database import get_db
 from ..logging_config import get_logger
@@ -242,6 +243,46 @@ async def get_image(
         image,
         image.s3_url_processed,
         original_url=s3.generate_presigned_url(settings.s3_bucket_raw, image.s3_key_raw),
+    )
+
+
+@router.post("/images/{image_id}/revert", response_model=ImageResponse)
+async def revert_image(
+    image_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Revert an image to its original state, removing edits and edited share links."""
+    image = crud.get_image(db, image_id, user_id=current_user.id)
+    if not image:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    if not image.s3_url_edited:
+        raise HTTPException(status_code=400, detail="Image has no edits to revert")
+
+    # Delete the edited image file from S3
+    if image.s3_url_edited:
+        edited_key = _extract_processed_key(image.s3_url_edited)
+        if edited_key:
+            s3.delete_file_from_s3(settings.s3_bucket_processed, edited_key)
+            logger.info(f"Deleted edited image from S3: {edited_key}")
+
+    # Delete share links that reference the edited version
+    deleted_links = crud.delete_edited_share_links(db, image_id, current_user.id)
+    logger.info(f"Deleted {deleted_links} edited share links for image {image_id}")
+
+    # Clear the edited URL in database
+    try:
+        updated_image = crud.revert_image_edit(db, image_id, current_user.id)
+    except ImageNotFoundError:
+        raise HTTPException(status_code=404, detail="Image not found")
+    except NoEditToRevertError:
+        raise HTTPException(status_code=400, detail="Image has no edits to revert")
+
+    return ImageResponse.from_orm_with_url(
+        updated_image,
+        updated_image.s3_url_processed,
+        original_url=s3.generate_presigned_url(settings.s3_bucket_raw, updated_image.s3_key_raw),
     )
 
 

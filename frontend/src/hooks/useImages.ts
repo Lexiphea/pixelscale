@@ -152,3 +152,38 @@ export function useProcessImage() {
         },
     });
 }
+
+export function useRevertImage() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (id: number) => api.revertImage(id),
+        onSuccess: (updatedImage) => {
+            // Update the image in the 'images' cache
+            queryClient.setQueryData(['images'], (oldData: any) => {
+                if (!oldData) return oldData;
+                return {
+                    ...oldData,
+                    pages: oldData.pages.map((page: Image[]) =>
+                        page.map(img =>
+                            img.id === updatedImage.id ? updatedImage : img
+                        )
+                    ),
+                };
+            });
+
+            // Update the image in the 'favorites' cache
+            queryClient.setQueryData(['favorites'], (oldData: any) => {
+                if (!oldData) return oldData;
+                return {
+                    ...oldData,
+                    pages: oldData.pages.map((page: Image[]) =>
+                        page.map(img =>
+                            img.id === updatedImage.id ? updatedImage : img
+                        )
+                    ),
+                };
+            });
+        },
+    });
+}

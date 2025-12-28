@@ -8,6 +8,17 @@ from .services.auth import get_password_hash, hash_username, get_username_displa
 logger = get_logger(__name__)
 
 
+# Custom exceptions for CRUD operations
+class ImageNotFoundError(Exception):
+    """Raised when an image is not found or not owned by the user."""
+    pass
+
+
+class NoEditToRevertError(Exception):
+    """Raised when attempting to revert an image that has no edits."""
+    pass
+
+
 # User CRUD operations
 def create_user(db: Session, username: str, password: str, email: str | None = None) -> User:
     """Create a new user with hashed username and password."""
@@ -223,3 +234,51 @@ def delete_share_link(db: Session, share_id: str, user_id: int) -> bool:
         db.commit()
         return True
     return False
+
+
+def delete_edited_share_links(db: Session, image_id: int, user_id: int) -> int:
+    """Delete all share links for edited version of an image.
+    
+    Verifies ownership before deletion. Returns 0 if unauthorized or image not found.
+    """
+    from .models import ShareLink
+    
+    # Verify ownership
+    image = db.query(Image).filter(Image.id == image_id).first()
+    if not image or image.user_id != user_id:
+        return 0
+    
+    result = db.query(ShareLink).filter(
+        ShareLink.image_id == image_id,
+        ShareLink.version == "edited"
+    ).delete()
+    db.commit()
+    return result
+
+
+def revert_image_edit(db: Session, image_id: int, user_id: int) -> Image:
+    """Clear the edited image URL and return the updated image.
+    
+    Args:
+        db: Database session
+        image_id: ID of the image to revert
+        user_id: ID of the user (for ownership verification)
+    
+    Returns:
+        The updated Image object with s3_url_edited cleared
+    
+    Raises:
+        ImageNotFoundError: If the image doesn't exist or isn't owned by the user
+        NoEditToRevertError: If the image exists but has no edited version
+    """
+    image = get_image(db, image_id, user_id)
+    if not image:
+        raise ImageNotFoundError(f"Image {image_id} not found or not owned by user {user_id}")
+    
+    if not image.s3_url_edited:
+        raise NoEditToRevertError(f"Image {image_id} has no edits to revert")
+    
+    image.s3_url_edited = None
+    db.commit()
+    db.refresh(image)
+    return image

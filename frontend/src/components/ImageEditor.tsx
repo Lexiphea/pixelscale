@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { downloadImage } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { type Image as ImageType, api } from '@/lib/api';
-import { Download, Trash2 } from 'lucide-react';
-import { useProcessImage } from '@/hooks/useImages';
+import { Download, Trash2, Undo2 } from 'lucide-react';
+import { useProcessImage, useRevertImage } from '@/hooks/useImages';
 
 interface ImageEditorProps {
     image: ImageType | null;
@@ -22,6 +22,7 @@ export default function ImageEditor({ image, isOpen, onClose, onDelete, onSave }
     const [lastValidImage, setLastValidImage] = useState<ImageType | null>(image);
     const [showOriginal, setShowOriginal] = useState(false);
     const processImage = useProcessImage();
+    const revertImage = useRevertImage();
 
     useEffect(() => {
         if (image) {
@@ -174,11 +175,38 @@ export default function ImageEditor({ image, isOpen, onClose, onDelete, onSave }
                                         console.error('Failed to save:', error);
                                     }
                                 }}
-                                disabled={processImage.isPending}
+                                disabled={processImage.isPending || revertImage.isPending}
                                 className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-black uppercase tracking-widest text-[10px] font-black"
                             >
                                 {processImage.isPending ? 'Processing...' : 'Save Changes'}
                             </Button>
+
+                            {displayImage.edited_url && (
+                                <Button
+                                    variant="outline"
+                                    onClick={async () => {
+                                        if (!displayImage) return;
+                                        const confirmed = window.confirm(
+                                            'Revert to original? This will delete all edits and associated share links for the edited version.'
+                                        );
+                                        if (!confirmed) return;
+                                        try {
+                                            const updatedImage = await revertImage.mutateAsync(displayImage.id);
+                                            setBrightness(100);
+                                            setContrast(100);
+                                            setGrayscale(0);
+                                            if (onSave) onSave(updatedImage);
+                                        } catch (error) {
+                                            console.error('Failed to revert:', error);
+                                        }
+                                    }}
+                                    disabled={revertImage.isPending || processImage.isPending}
+                                    className="w-full h-10 rounded-xl border-orange-500/30 hover:bg-orange-500/10 text-orange-400 text-[10px] font-bold uppercase tracking-wider"
+                                >
+                                    <Undo2 className="h-3.5 w-3.5 mr-2" />
+                                    {revertImage.isPending ? 'Reverting...' : 'Revert to Original'}
+                                </Button>
+                            )}
 
                             <div className="flex gap-2">
                                 <Button
