@@ -172,6 +172,12 @@ export default function Shared() {
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
                                     <p className="font-medium text-white truncate">{link.image_filename}</p>
+                                    <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${link.version === 'original'
+                                            ? 'bg-blue-500/20 text-blue-400'
+                                            : 'bg-primary/20 text-primary'
+                                        }`}>
+                                        {link.version === 'original' ? 'Original' : 'Edited'}
+                                    </span>
                                     {link.is_expired && (
                                         <span className="shrink-0 px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-500 text-[10px] font-bold uppercase">
                                             Expired

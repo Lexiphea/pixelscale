@@ -173,6 +173,7 @@ class ShareLinkListItem(BaseModel):
     image_filename: str
     image_url: str | None
     share_url: str
+    version: str
     expires_at: datetime | None
     created_at: datetime
     is_expired: bool

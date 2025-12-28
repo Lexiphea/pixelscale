@@ -57,15 +57,24 @@ export default function ShareModal({ image, isOpen, onClose }: ShareModalProps) 
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch {
-            // Fallback for older browsers
+            // Fallback for non-HTTPS contexts
             const textArea = document.createElement('textarea');
             textArea.value = shareUrl;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-9999px';
+            textArea.style.top = '0';
             document.body.appendChild(textArea);
+            textArea.focus();
             textArea.select();
-            document.execCommand('copy');
+            try {
+                document.execCommand('copy');
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            } catch {
+                // If even fallback fails, at least show the URL for manual copy
+                console.error('Copy failed');
+            }
             document.body.removeChild(textArea);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
         }
     };
 

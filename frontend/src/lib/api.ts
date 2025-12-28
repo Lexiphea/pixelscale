@@ -242,6 +242,7 @@ export interface ShareLinkListItem {
     image_filename: string;
     image_url: string | null;
     share_url: string;
+    version: 'edited' | 'original';
     expires_at: string | null;
     created_at: string;
     is_expired: boolean;

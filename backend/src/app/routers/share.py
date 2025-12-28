@@ -90,6 +90,7 @@ def list_share_links(
             image_filename=image.filename,
             image_url=image_url,
             share_url=f"{base_url}/api/s/{link.id}",
+            version=link.version or "edited",
             expires_at=link.expires_at,
             created_at=link.created_at,
             is_expired=link.is_expired(),
