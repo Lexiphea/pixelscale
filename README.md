@@ -1,17 +1,19 @@
 # PixelScale
 
-A modern image upscaling application with a FastAPI backend and React frontend.
+A modern image upscaling application with a FastAPI backend and React frontend, deployable locally or on AWS.
 
 ## Project Structure
 
 ```
 final_project/
-├── backend/          # FastAPI backend
-├── frontend/         # React + Vite frontend
-├── package.json      # Root package.json for running both services
-├── Makefile          # Make commands for development
-├── dev.sh            # Shell script for development
-└── docker-compose.yml  # Docker configuration
+├── backend/              # FastAPI backend
+├── frontend/             # React + Vite frontend
+├── docker-compose.yml    # Docker config (local development)
+├── docker-compose.aws.yml # Docker config (AWS deployment)
+├── deploy-aws.sh         # AWS deployment script
+├── Makefile              # Make commands for development
+├── dev.sh                # Shell script for development
+└── package.json          # Root package.json for running both services
 ```
 
 ## Prerequisites
@@ -19,9 +21,11 @@ final_project/
 - **Node.js** >= 18
 - **Python** >= 3.12
 - **uv** (Python package manager) - [Install uv](https://github.com/astral-sh/uv)
-- **Docker** (optional, for containerized development)
+- **Docker** (for containerized development/deployment)
 
-## Quick Start
+---
+
+## Running Locally
 
 ### Install Dependencies
 
@@ -38,12 +42,6 @@ Or use the Makefile:
 ```bash
 make install
 ```
-
----
-
-## Running the Application
-
-You have **4 options** to run both frontend and backend together:
 
 ### Option 1: npm + concurrently (Recommended)
 
@@ -64,8 +62,6 @@ npm run backend   # Backend only
 npm run frontend  # Frontend only
 ```
 
----
-
 ### Option 2: Makefile
 
 Best for: Unix users who prefer make commands.
@@ -84,8 +80,6 @@ make build    # Build frontend for production
 make clean    # Clean build artifacts
 ```
 
----
-
 ### Option 3: Shell Script
 
 Best for: Simple bash execution with graceful shutdown.
@@ -93,8 +87,6 @@ Best for: Simple bash execution with graceful shutdown.
 ```bash
 ./dev.sh
 ```
-
----
 
 ### Option 4: Docker Compose
 
@@ -110,58 +102,102 @@ Build fresh:
 docker-compose up --build
 ```
 
----
+### Local Service URLs
 
-## Service URLs
+| Service  | URL                          |
+|----------|------------------------------|
+| Frontend | <http://localhost:5173>        |
+| Backend  | <http://localhost:8000>        |
+| API Docs | <http://localhost:8000/docs>   |
 
-| Service  | URL                    |
-|----------|------------------------|
-| Frontend | <http://localhost:5173>  |
-| Backend  | <http://localhost:8000>  |
-| API Docs | <http://localhost:8000/docs> |
+### Environment Variables (Local)
 
-## Environment Variables
-
-### Backend (`backend/.env`)
-
-Copy the example file and configure:
+**Backend** (`backend/.env`):
 
 ```bash
 cp backend/.env.example backend/.env
 ```
 
-### Frontend
-
-The frontend uses Vite environment variables. Create `frontend/.env.local` if needed:
+**Frontend** (`frontend/.env.local`):
 
 ```env
 VITE_API_URL=http://localhost:8000
 ```
 
-## Development
+---
 
-### Backend
+## AWS Deployment
 
-```bash
-cd backend
-uv run python main.py
+### Prerequisites
+
+- AWS EC2 instance with Docker installed
+- RDS PostgreSQL database
+- S3 buckets for raw/processed images
+- Application Load Balancer (ALB) configured
+- IAM role (LabRole) attached to EC2 with S3, RDS, CloudWatch access
+
+### Environment Setup
+
+Create `.env.aws` in the project root:
+
+```env
+DATABASE_URL=postgresql://<user>:<password>@<rds-endpoint>:5432/<dbname>
+S3_BUCKET_RAW=pixelscale-raw-<account-id>
+S3_BUCKET_PROCESSED=pixelscale-processed-<account-id>
+AWS_REGION=us-east-1
+JWT_SECRET_KEY=<your-secret-key>
+VITE_API_URL=http://<alb-dns-name>
 ```
 
-### Frontend
+### Quick Deploy
+
+SSH into your EC2 instance and run:
 
 ```bash
-cd frontend
-npm run dev
+cd /home/ec2-user/app
+./deploy-aws.sh
 ```
 
-## Build for Production
+### Manual Deploy
 
 ```bash
-# Build frontend
-cd frontend && npm run build
-
-# The built files will be in frontend/dist/
+cd /home/ec2-user/app
+sudo git pull
+sudo docker-compose -f docker-compose.aws.yml --env-file .env.aws up -d --build
 ```
+
+### AWS Service URLs
+
+| Service  | URL                          |
+|----------|------------------------------|
+| Frontend | http://<alb-dns>:3000        |
+| Backend  | http://<alb-dns>             |
+| API Docs | http://<alb-dns>/docs        |
+
+### AWS Architecture
+
+```
+Internet → ALB → Auto Scaling Group (1-4 instances)
+                      │
+               EC2 Instance(s)
+          ┌──────────┴──────────┐
+          ▼                     ▼
+   Frontend (nginx:80)   Backend (uvicorn:8000)
+                               │
+                    ┌──────────┴──────────┐
+                    ▼                     ▼
+              RDS PostgreSQL         S3 Buckets
+```
+
+### Security Groups
+
+| Group | Ports | Purpose |
+|-------|-------|---------|
+| ALB | 80, 443, 3000 | Public HTTP/HTTPS + Frontend |
+| EC2 | 80, 8000, 22 | Frontend, Backend API, SSH |
+| RDS | 5432 | PostgreSQL (EC2 only) |
+
+---
 
 ## License
 
