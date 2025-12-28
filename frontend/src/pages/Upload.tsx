@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Upload as UploadIcon, FileImage, AlertCircle, Loader2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function Upload() {
     const [isDragging, setIsDragging] = useState(false);
@@ -12,6 +13,7 @@ export default function Upload() {
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault();
@@ -80,6 +82,7 @@ export default function Upload() {
             if (failures.length > 0) {
                 setError(`${failures.length} of ${files.length} uploads failed. Please try again.`);
             } else {
+                queryClient.invalidateQueries({ queryKey: ['images'] });
                 navigate('/');
             }
         } catch {
